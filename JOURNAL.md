@@ -25,3 +25,6 @@ secret attached in the UI: secrets are a known gap for CLI-pushed kernels (kaggl
 Probe v4 (2026-09-23): plain `wandb.init` with the secret attached in the UI also fails —
 `WANDB_API_KEY` is not in the environment and wandb raises "No API key configured".
 The Kaggle runtime does not inject secrets into CLI-pushed runs.
+Probe v5 (2026-09-23): Kaggle's own `UserSecretsClient().get_secret("WANDB_API_KEY")` snippet
+fails the same way (ConnectionError), so secrets are unusable in CLI-pushed runs. Needs an
+alternative: W&B offline + local `wandb sync`, or the key in a private dataset.
