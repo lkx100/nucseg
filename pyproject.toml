@@ -1,0 +1,14 @@
+[project]
+name = "nucseg"
+version = "0.1.0"
+description = "Nuclei instance segmentation experiments (DSB2018), trained on Kaggle GPUs"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "Lucky Kumar", email = "lk5999950@gmail.com" }
+]
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.12.10,<0.13.0"]
+build-backend = "uv_build"
