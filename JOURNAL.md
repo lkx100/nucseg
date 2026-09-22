@@ -15,3 +15,10 @@ v2 completed on a T4 (15.6 GB). Image versions: Python 3.12.13, torch 2.10.0+cu1
 torchvision 0.25.0, numpy 2.0.2, albumentations 2.0.8, scikit-image 0.25.2, wandb 0.26.1.
 W&B failed with "ConnectionError ... communicate with service" — no secret attached yet;
 the probe now reports the secret lookup and the `wandb.init` separately to tell them apart.
+
+## 2026-09-23 — probe v3: dataset attached, W&B secret unreachable
+Dataset `sindhu9642/nuclei-seg-corrected` mounts at
+`/kaggle/input/datasets/sindhu9642/nuclei-seg-corrected/` (newer Kaggle path layout, not
+`/kaggle/input/<slug>/`). DSB2018 layout: `stage1_train/<id>/images/<id>.png` plus one PNG per
+nucleus in `masks/`. `UserSecretsClient().get_secret` fails with ConnectionError even with the
+secret attached in the UI: secrets are a known gap for CLI-pushed kernels (kaggle-cli #582).
