@@ -58,37 +58,26 @@ for name in inputs:
     print(name, len(files), "entries; first few:", [str(f.relative_to(Path('/kaggle/input', name))) for f in files[:5]])
 
 # %% [markdown]
-# ## W&B secret
+# ## W&B
 #
-# Add a Kaggle Secret named `WANDB_API_KEY` to this notebook (Add-ons → Secrets) first.
+# `WANDB_API_KEY` is attached to this notebook as a Kaggle Secret. No explicit lookup:
+# just call `wandb.init` and see whether the runtime provides the key on its own.
 
 # %%
 import traceback
 
-report["wandb"] = {}
+report["wandb"] = {"key_in_env": "WANDB_API_KEY" in os.environ}
 try:
-    from kaggle_secrets import UserSecretsClient
+    import wandb
 
-    os.environ["WANDB_API_KEY"] = UserSecretsClient().get_secret("WANDB_API_KEY")
-    report["wandb"]["secret"] = "ok"
+    run = wandb.init(entity="lkx100-kl-university", project="nucseg", name="env-probe",
+                     job_type="probe", config={"kind": "environment probe"})
+    wandb.log({"probe": 1})
+    report["wandb"].update(ok=True, url=run.url)
+    run.finish()
 except Exception:
-    report["wandb"]["secret"] = traceback.format_exc(limit=1).strip().splitlines()[-1]
-
-if report["wandb"].get("secret") == "ok":
-    try:
-        import wandb
-
-        run = wandb.init(entity="lkx100-kl-university", project="nucseg", name="env-probe",
-                         job_type="probe", config={"kind": "environment probe"})
-        wandb.log({"probe": 1})
-        report["wandb"].update(ok=True, url=run.url)
-        run.finish()
-    except Exception:
-        traceback.print_exc()
-        report["wandb"].update(ok=False, error=traceback.format_exc(limit=1).strip().splitlines()[-1])
-else:
-    report["wandb"]["ok"] = False
-
+    traceback.print_exc()
+    report["wandb"].update(ok=False, error=traceback.format_exc(limit=1).strip().splitlines()[-1])
 print(report["wandb"])
 
 # %% [markdown]
@@ -99,7 +88,7 @@ print(report["wandb"])
 summary = (
     f"RESULT probe python={report['python']} torch={report['versions'].get('torch')} "
     f"gpu={report['gpu']['device']} vram={report['gpu']['vram_gb']}GB "
-    f"inputs={','.join(inputs) or 'none'} wandb={report['wandb']['ok']} secret={report['wandb']['secret']}"
+    f"inputs={','.join(inputs) or 'none'} wandb={report['wandb']['ok']} key_in_env={report['wandb']['key_in_env']}"
 )
 (OUT / "summary.txt").write_text(summary + "\n")
 print(summary)
