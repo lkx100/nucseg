@@ -22,3 +22,6 @@ Dataset `sindhu9642/nuclei-seg-corrected` mounts at
 `/kaggle/input/<slug>/`). DSB2018 layout: `stage1_train/<id>/images/<id>.png` plus one PNG per
 nucleus in `masks/`. `UserSecretsClient().get_secret` fails with ConnectionError even with the
 secret attached in the UI: secrets are a known gap for CLI-pushed kernels (kaggle-cli #582).
+Probe v4 (2026-09-23): plain `wandb.init` with the secret attached in the UI also fails —
+`WANDB_API_KEY` is not in the environment and wandb raises "No API key configured".
+The Kaggle runtime does not inject secrets into CLI-pushed runs.
