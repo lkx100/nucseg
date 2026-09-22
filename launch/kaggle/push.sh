@@ -15,6 +15,14 @@ stage=".kaggle-stage/$slug"
 
 rm -rf "$stage" && mkdir -p "$stage"
 jupytext --to ipynb "$nb" -o "$stage/$slug.ipynb" >/dev/null
+# jupytext writes no kernelspec, and Kaggle rejects a notebook without one
+python3 - "$stage/$slug.ipynb" <<'PATCH'
+import json, sys
+p = sys.argv[1]
+nb = json.load(open(p))
+nb["metadata"]["kernelspec"] = {"name": "python3", "display_name": "Python 3", "language": "python"}
+json.dump(nb, open(p, "w"))
+PATCH
 
 ds_json=$(python3 -c "import sys,json;print(json.dumps([d for d in sys.argv[1].split(',') if d]))" "${DATASETS:-}")
 cat > "$stage/kernel-metadata.json" <<JSON

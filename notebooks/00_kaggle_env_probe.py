@@ -63,19 +63,32 @@ for name in inputs:
 # Add a Kaggle Secret named `WANDB_API_KEY` to this notebook (Add-ons → Secrets) first.
 
 # %%
+import traceback
+
+report["wandb"] = {}
 try:
     from kaggle_secrets import UserSecretsClient
 
     os.environ["WANDB_API_KEY"] = UserSecretsClient().get_secret("WANDB_API_KEY")
-    import wandb
+    report["wandb"]["secret"] = "ok"
+except Exception:
+    report["wandb"]["secret"] = traceback.format_exc(limit=1).strip().splitlines()[-1]
 
-    run = wandb.init(entity="lkx100-kl-university", project="nucseg", name="env-probe",
-                     job_type="probe", config={"kind": "environment probe"})
-    wandb.log({"probe": 1})
-    report["wandb"] = {"ok": True, "url": run.url}
-    run.finish()
-except Exception as e:  # noqa: BLE001 - the probe reports failures instead of crashing
-    report["wandb"] = {"ok": False, "error": f"{type(e).__name__}: {e}"}
+if report["wandb"].get("secret") == "ok":
+    try:
+        import wandb
+
+        run = wandb.init(entity="lkx100-kl-university", project="nucseg", name="env-probe",
+                         job_type="probe", config={"kind": "environment probe"})
+        wandb.log({"probe": 1})
+        report["wandb"].update(ok=True, url=run.url)
+        run.finish()
+    except Exception:
+        traceback.print_exc()
+        report["wandb"].update(ok=False, error=traceback.format_exc(limit=1).strip().splitlines()[-1])
+else:
+    report["wandb"]["ok"] = False
+
 print(report["wandb"])
 
 # %% [markdown]
@@ -86,7 +99,7 @@ print(report["wandb"])
 summary = (
     f"RESULT probe python={report['python']} torch={report['versions'].get('torch')} "
     f"gpu={report['gpu']['device']} vram={report['gpu']['vram_gb']}GB "
-    f"inputs={','.join(inputs) or 'none'} wandb={report['wandb']['ok']}"
+    f"inputs={','.join(inputs) or 'none'} wandb={report['wandb']['ok']} secret={report['wandb']['secret']}"
 )
 (OUT / "summary.txt").write_text(summary + "\n")
 print(summary)
