@@ -33,3 +33,5 @@ alternative: W&B offline + local `wandb sync`, or the key in a private dataset.
 Probe v6 logged W&B offline to `/kaggle/working/wandb/`, and `launch/kaggle/pull.sh` downloaded
 the run folder. The upload with `wandb sync` failed: no W&B login on this machine yet. The run
 folder is kept in `runs/env-probe/wandb/` so it can be synced after `wandb login`.
+`wandb login` saved to `~/.netrc`, and `wandb sync` uploaded the probe run
+(https://wandb.ai/lkx100-kl-university/nucseg/runs/imhsavb4). The offline W&B loop works end to end.

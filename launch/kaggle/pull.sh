@@ -28,5 +28,7 @@ for run_dir in "$out"/wandb/offline-run-*; do
     echo "$log" | tail -2 >&2
     continue
   fi
-  echo "$log" | grep -Eo "https://wandb.ai/[^ ]+" | tail -1 || true
+  # wandb sync prints "[entity/project/run_id]" rather than a URL
+  run_path=$(echo "$log" | grep -Eo "\[[^]/ ]+/[^]/ ]+/[^]/ ]+\]" | tail -1 | tr -d '[]')
+  [ -n "$run_path" ] && echo "https://wandb.ai/${run_path%/*}/runs/${run_path##*/}"
 done

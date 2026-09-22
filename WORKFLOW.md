@@ -153,7 +153,7 @@ Done:
 
 Next:
 - [x] Repo skeleton: `AGENTS.md`, `JOURNAL.md`, `results.tsv`, `launch/kaggle/`
-- [ ] Local `wandb login` on this machine, then confirm `wandb sync` of the probe run
+- [x] Local `wandb login` (`~/.netrc`) and `wandb sync` of the probe run confirmed
 - [ ] Pin dependencies from a Kaggle `pip freeze`; install CPU-only torch locally
 - [ ] Pick the dataset (DSB2018 stage1) and **freeze the splits and metric in `eval/`**
 - [ ] Spec 01: baseline U-Net, reproducing a reasonable Dice/AJI with the job contract end to end
