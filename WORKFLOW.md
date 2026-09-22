@@ -77,7 +77,7 @@ Every training entry point obeys the same rules, whatever backend runs it:
 After every run a row is appended to `results.tsv` (tab-separated, because the description column contains commas):
 `run_id  commit  config  backend  dice  aji  map  vram_gb  minutes  status(keep|discard|crash)  wandb  description`
 
-**Tracking (W&B):** every non-smoke run logs to W&B under entity `lkx100-kl-university`, project `nucseg`, with the `run_id` as the W&B run name and the config and git commit attached. Smoke runs set `WANDB_MODE=disabled`. W&B gives live curves while a kernel is running and a place to eyeball prediction grids; `results.tsv` stays the agent-readable source of truth. Inside a Kaggle kernel the key comes from a Kaggle Secret named `WANDB_API_KEY`, never from the repo.
+**Tracking (W&B):** every non-smoke run logs to W&B under entity `lkx100-kl-university`, project `nucseg`, with the `run_id` as the W&B run name and the config and git commit attached. Smoke runs set `WANDB_MODE=disabled`. `results.tsv` stays the agent-readable source of truth. Kaggle Secrets don't reach kernels pushed from the CLI (tested 2026-09-23, see `JOURNAL.md`), so W&B runs **offline** on Kaggle and writes to `/kaggle/working/wandb/`. After a run, `launch/kaggle/pull.sh` downloads the outputs and uploads them with `wandb sync` from this machine. Curves appear in W&B once the run ends, not while it trains. The Kaggle notebook log is still visible during a run.
 
 ## 5. Experiment protocol (how a research step happens)
 
@@ -96,7 +96,7 @@ After every run a row is appended to `results.tsv` (tab-separated, because the d
 - **Distrust surprisingly good results.** Any jump of more than a few points triggers a leakage check (overlap between splits, for example tiles from the same image) and a look at the plots before it goes in the journal.
 - **Budget caps are stated in the spec.** The agent stops and asks when it hits one.
 - **No silent fallbacks.** If the GPU is not found, the job fails loudly. It never trains quietly on CPU for 9 hours.
-- **Secrets** (`~/.kaggle/credentials.json`, the W&B key in `~/.netrc`, the `WANDB_API_KEY` Kaggle Secret) stay in their standard locations. They never go in the repo, in a notebook, or in a chat message.
+- **Secrets** (`~/.kaggle/credentials.json`, the local `wandb login`) stay on this machine. They never go to Kaggle, in the repo, in a notebook, or in a chat message.
 
 ## 7. Context hygiene (keeping the LLM effective)
 
@@ -149,13 +149,13 @@ Milestone commits get a git tag, and figures worth keeping go in `reports/figure
 Done:
 - [x] `git init`, remote `github.com/lkx100/nucseg`, `uv init` with Python 3.12 (matching Kaggle's runtime)
 - [x] `kaggle` and `jupytext` installed as uv tools; Kaggle CLI authenticated (`kaggle kernels list --mine`)
-- [x] W&B MCP connected, entity `lkx100-kl-university`
+- [x] Kaggle env probe (`notebooks/00_kaggle_env_probe.py`): T4 GPU, dataset mount and W&B offline logging all confirmed
 
 Next:
-- [ ] Repo skeleton: `AGENTS.md`, `eval/`, `configs/`, `specs/`, `launch/`, `JOURNAL.md`, `results.tsv`
+- [x] Repo skeleton: `AGENTS.md`, `JOURNAL.md`, `results.tsv`, `launch/kaggle/`
+- [ ] Local `wandb login` on this machine, then confirm `wandb sync` of the probe run
 - [ ] Pin dependencies from a Kaggle `pip freeze`; install CPU-only torch locally
 - [ ] Pick the dataset (DSB2018 stage1) and **freeze the splits and metric in `eval/`**
-- [ ] `WANDB_API_KEY` as a Kaggle Secret, attached to the kernel
 - [ ] Spec 01: baseline U-Net, reproducing a reasonable Dice/AJI with the job contract end to end
 
 ---

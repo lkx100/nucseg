@@ -2,29 +2,34 @@
 
 Append-only. Newest entries at the bottom. Read on demand, not every session.
 
-## 2026-09-22 — repo setup
+## 2026-09-22: repo setup
 Project renamed to `nucseg` and pushed to github.com/lkx100/nucseg. Kaggle is the only GPU
 backend; Modal dropped. uv project on Python 3.12 to match Kaggle's runtime; `kaggle` and
 `jupytext` as uv tools. W&B chosen for live curves (entity `lkx100-kl-university`).
 Next: Kaggle env probe kernel to pin dependency versions, then freeze `eval/`.
 
-## 2026-09-22 — Kaggle env probe (kernel `luckyx100/nucseg-env-probe`, v2)
+## 2026-09-22: Kaggle env probe (kernel `luckyx100/nucseg-env-probe`, v2)
 First push failed: jupytext writes no `kernelspec`, and Kaggle rejects that
 ("No kernel name found in notebook"). `launch/kaggle/push.sh` now patches it in.
 v2 completed on a T4 (15.6 GB). Image versions: Python 3.12.13, torch 2.10.0+cu128,
 torchvision 0.25.0, numpy 2.0.2, albumentations 2.0.8, scikit-image 0.25.2, wandb 0.26.1.
-W&B failed with "ConnectionError ... communicate with service" — no secret attached yet;
+W&B failed with "ConnectionError ... communicate with service": no secret attached yet;
 the probe now reports the secret lookup and the `wandb.init` separately to tell them apart.
 
-## 2026-09-23 — probe v3: dataset attached, W&B secret unreachable
+## 2026-09-23: probe v3: dataset attached, W&B secret unreachable
 Dataset `sindhu9642/nuclei-seg-corrected` mounts at
 `/kaggle/input/datasets/sindhu9642/nuclei-seg-corrected/` (newer Kaggle path layout, not
 `/kaggle/input/<slug>/`). DSB2018 layout: `stage1_train/<id>/images/<id>.png` plus one PNG per
 nucleus in `masks/`. `UserSecretsClient().get_secret` fails with ConnectionError even with the
 secret attached in the UI: secrets are a known gap for CLI-pushed kernels (kaggle-cli #582).
-Probe v4 (2026-09-23): plain `wandb.init` with the secret attached in the UI also fails —
+Probe v4 (2026-09-23): plain `wandb.init` with the secret attached in the UI also fails -
 `WANDB_API_KEY` is not in the environment and wandb raises "No API key configured".
 The Kaggle runtime does not inject secrets into CLI-pushed runs.
 Probe v5 (2026-09-23): Kaggle's own `UserSecretsClient().get_secret("WANDB_API_KEY")` snippet
 fails the same way (ConnectionError), so secrets are unusable in CLI-pushed runs. Needs an
 alternative: W&B offline + local `wandb sync`, or the key in a private dataset.
+
+## 2026-09-23: W&B switched to offline logging on Kaggle
+Probe v6 logged W&B offline to `/kaggle/working/wandb/`, and `launch/kaggle/pull.sh` downloaded
+the run folder. The upload with `wandb sync` failed: no W&B login on this machine yet. The run
+folder is kept in `runs/env-probe/wandb/` so it can be synced after `wandb login`.

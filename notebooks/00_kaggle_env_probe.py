@@ -2,7 +2,7 @@
 # # Kaggle environment probe
 #
 # Run once on Kaggle to (1) pin dependency versions to the image, (2) confirm the GPU,
-# (3) confirm the attached dataset, (4) confirm the `WANDB_API_KEY` secret works.
+# (3) confirm the attached dataset, (4) confirm W&B offline logging works.
 # Writes `env.json` + `summary.txt` to `/kaggle/working/`, which `kaggle kernels output` pulls.
 
 # %%
@@ -58,31 +58,25 @@ for name in inputs:
     print(name, len(files), "entries; first few:", [str(f.relative_to(Path('/kaggle/input', name))) for f in files[:5]])
 
 # %% [markdown]
-# ## W&B
+# ## W&B (offline)
 #
-# `WANDB_API_KEY` is attached to this notebook as a Kaggle Secret. No explicit lookup:
-# just call `wandb.init` and see whether the runtime provides the key on its own.
+# Kaggle Secrets don't reach CLI-pushed runs, so W&B logs offline into /kaggle/working/wandb/.
+# `launch/kaggle/pull.sh` downloads that folder and uploads it with `wandb sync` on the local machine.
 
 # %%
 import traceback
 
-report["wandb"] = {"key_in_env": "WANDB_API_KEY" in os.environ}
-try:
-    from kaggle_secrets import UserSecretsClient
-    user_secrets = UserSecretsClient()
-    secret_value_0 = user_secrets.get_secret("WANDB_API_KEY")
-    os.environ["WANDB_API_KEY"] = secret_value_0
-    report["wandb"]["secret"] = "ok"
-except Exception:
-    traceback.print_exc()
-    report["wandb"]["secret"] = traceback.format_exc(limit=1).strip().splitlines()[-1]
+os.environ["WANDB_MODE"] = "offline"
+os.environ["WANDB_DIR"] = str(OUT)
+report["wandb"] = {}
 try:
     import wandb
 
     run = wandb.init(entity="lkx100-kl-university", project="nucseg", name="env-probe",
                      job_type="probe", config={"kind": "environment probe"})
-    wandb.log({"probe": 1})
-    report["wandb"].update(ok=True, url=run.url)
+    for step in range(3):
+        wandb.log({"probe": step})
+    report["wandb"].update(ok=True, run_id=run.id)
     run.finish()
 except Exception:
     traceback.print_exc()
@@ -97,7 +91,7 @@ print(report["wandb"])
 summary = (
     f"RESULT probe python={report['python']} torch={report['versions'].get('torch')} "
     f"gpu={report['gpu']['device']} vram={report['gpu']['vram_gb']}GB "
-    f"inputs={','.join(inputs) or 'none'} wandb={report['wandb']['ok']} key_in_env={report['wandb']['key_in_env']}"
+    f"inputs={','.join(inputs) or 'none'} wandb_offline={report['wandb']['ok']}"
 )
 (OUT / "summary.txt").write_text(summary + "\n")
 print(summary)
