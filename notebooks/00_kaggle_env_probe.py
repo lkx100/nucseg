@@ -68,6 +68,15 @@ import traceback
 
 report["wandb"] = {"key_in_env": "WANDB_API_KEY" in os.environ}
 try:
+    from kaggle_secrets import UserSecretsClient
+    user_secrets = UserSecretsClient()
+    secret_value_0 = user_secrets.get_secret("WANDB_API_KEY")
+    os.environ["WANDB_API_KEY"] = secret_value_0
+    report["wandb"]["secret"] = "ok"
+except Exception:
+    traceback.print_exc()
+    report["wandb"]["secret"] = traceback.format_exc(limit=1).strip().splitlines()[-1]
+try:
     import wandb
 
     run = wandb.init(entity="lkx100-kl-university", project="nucseg", name="env-probe",
