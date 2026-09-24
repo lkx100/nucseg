@@ -2,7 +2,7 @@
 # Wait for a Kaggle kernel to finish, download its outputs, and upload any offline W&B runs.
 #   launch/kaggle/pull.sh <slug> <out_dir>
 # Prints the kernel status and the W&B run URLs. The W&B login lives in the local wandb config,
-# never on Kaggle.
+# never on Kaggle. Checkpoints (*.pt) stay on Kaggle unless CKPT=1.
 set -euo pipefail
 
 slug=${1:?usage: pull.sh <slug> <out_dir>}
@@ -19,7 +19,9 @@ done
 echo "$status"
 
 rm -rf "$out" && mkdir -p "$out"
-kaggle kernels output "$user/$slug" -p "$out" >/dev/null
+pattern='^(?!.*\.pt$)'
+[ "${CKPT:-0}" = "1" ] && pattern='.*'
+kaggle kernels output "$user/$slug" -p "$out" --file-pattern "$pattern" >/dev/null
 
 shopt -s nullglob
 for run_dir in "$out"/wandb/offline-run-*; do

@@ -28,7 +28,7 @@ I have no local GPU, so every option below is remote. Each one differs in how ea
 |---|---|---|---|
 | **Kaggle Kernels (CLI)** | Free, about 30 GPU-hours a week (T4 or P100) | ✅ `kaggle kernels push`, `status`, `output`. There is also an official remote MCP at `kaggle.com/mcp`. | **Default for batch training runs.** Free, runs unattended, and many datasets (including DSB2018 nuclei) are already on Kaggle. |
 
-**Decision for this project: Kaggle is the only GPU backend.** The local machine runs `--smoke` only (2 batches, tiny model, seconds of CPU) and never trains. Paid or credit-based backends (Modal, Lightning, HF Jobs) were considered and dropped: one backend means one set of credentials and half the launcher code. `launch/run.sh` still takes a backend argument (`local`, `kaggle`), so a second backend is a new adapter file, not a rewrite. Revisit only if the 30 GPU-hours a week or the 12-hour session cap become the bottleneck.
+**Decision for this project: Kaggle is the only GPU backend.** The local machine runs `--smoke` only (2 batches, tiny model, seconds of CPU) and never trains. Paid or credit-based backends (Modal, Lightning, HF Jobs) were considered and dropped: one backend means one set of credentials and half the launcher code. A second backend would be a new folder under `launch/`, next to `launch/kaggle/`. Revisit only if the 30 GPU-hours a week or the 12-hour session cap become the bottleneck.
 
 **Kaggle limits to plan against:** about 30 GPU-hours a week, 12 hours maximum per session, a queue wait before a kernel starts, and no interactive access once it runs.
 
@@ -70,9 +70,9 @@ Every training entry point obeys the same rules, whatever backend runs it:
 5. **`--smoke` mode:** 2 batches, a tiny model and CPU-OK. Must pass **locally** before any GPU launch. This single rule saves the most wasted GPU-hours and the most agent round trips.
 6. **Seeds are fixed and logged.** The config is copied into the output directory.
 
-**Launcher:** `launch/run.sh <backend> <config>` does the following:
-- `local`: runs the smoke test.
-- `kaggle`: generates `kernel-metadata.json` (GPU on, dataset sources, code bundled as a script or utility dataset), runs `kaggle kernels push`, then polls `kaggle kernels status` and fetches results with `kaggle kernels output` into `runs/<id>/`.
+**Launcher:** `launch/kaggle/`.
+- `push.sh` with `CONFIG=` set pushes `notebooks/train_kernel.py`. It refuses unless the tree is clean and `--smoke` passed on HEAD, because a clean smoke run leaves a marker in `runs/.smoke-ok/`. It bundles the committed `src/`, `eval/`, `configs/` and `pyproject.toml` into the notebook, so the kernel runs exactly HEAD, and it prints the run ID.
+- `pull.sh` waits for the kernel, downloads the outputs into `runs/<id>/` (without checkpoints unless `CKPT=1`) and runs `wandb sync`.
 
 After every run a row is appended to `results.tsv` (tab-separated, because the description column contains commas):
 `run_id  commit  config  backend  dice  dice_std  iou  pixacc  vram_gb  minutes  status(keep|discard|crash)  wandb  description`
@@ -139,8 +139,8 @@ Milestone commits get a git tag, and figures worth keeping go in `reports/figure
 
 ## 10. Small automations to build (in order of payoff)
 
-1. `launch/run.sh` plus the job contract (§4). This is the main unlock.
-2. A **smoke-test gate**: the launcher refuses a remote launch unless `--smoke` passed on the current commit.
+1. ~~The launcher plus the job contract (§4).~~ Done: `launch/kaggle/`, `nucseg.train`.
+2. ~~A smoke-test gate.~~ Done: `push.sh` refuses a launch unless `--smoke` passed on the current commit.
 3. **Background status polling** plus a desktop notification when a Kaggle job finishes or crashes.
 4. A `results.tsv` appender plus a tiny `report.py` that prints the leaderboard and plots the metric against runs.
 5. Project **slash commands or skills**: `/launch <config>`, `/status`, `/retro` (session retrospective into the journal), `/advise` (search the journal and learnings before starting a new spec).

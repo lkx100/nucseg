@@ -1,0 +1,30 @@
+# Spec 01, arm A: Swin-T U-Net baseline (no NSL). Arm B (01-swin-t-nsl.yaml) differs only in nsl.alpha.
+model:
+  encoder: swin_tiny_patch4_window7_224   # ImageNet-1k weights; window resized to 8 for 256 crops
+  pretrained: true
+  window_size: 8
+  decoder_channels: [256, 128, 64, 32, 16]
+data:
+  crop: 256
+  crops_per_image: 4
+  scale: [0.75, 1.25]
+  brightness: 0.05     # added, in [0, 1] pixel units
+  contrast: 0.1        # multiplied, 1 +/- this
+train:
+  folds: [0, 1, 2, 3, 4]
+  batch_size: 16
+  max_epochs: 60
+  patience: 10         # epochs without stop-set gain
+  warmup_epochs: 3
+  lr: 1.0e-4
+  weight_decay: 0.01
+  amp: true
+  num_workers: 2
+  seed: 0
+nsl:
+  alpha: 0.0           # weight of the adversarial neighbour loss; 0 turns NSL off
+  eps_255: 2           # perturbation size in 1/255 pixel units, L-infinity
+eval:
+  tile: 256
+  overlap: 0.5
+  robust_eps_255: 2    # FGSM size for the robustness score

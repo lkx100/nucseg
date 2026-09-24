@@ -8,11 +8,26 @@ authors = [
     { name = "Lucky Kumar", email = "lk5999950@gmail.com" }
 ]
 dependencies = [
+    "matplotlib==3.10.0",
     "numpy==2.0.2",
     "pillow==11.3.0",
+    "pyyaml==6.0.3",
     "scikit-learn>=1.9.1",
+    "timm==1.0.30",
+    "torch==2.10.0",
+    "torchvision==0.25.0",
 ]
 
 [build-system]
 requires = ["uv_build>=0.12.10,<0.13.0"]
 build-backend = "uv_build"
+
+# Local installs are CPU-only; Kaggle's image supplies the CUDA builds of the same versions.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+torchvision = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

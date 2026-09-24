@@ -31,7 +31,7 @@ Nuclei segmentation (DSB2018). Read `WORKFLOW.md` before implementing anything.
 ```bash
 uv sync                                  # environment (Python 3.12, CPU-only torch)
 uv run python -m nucseg.train --config configs/X.yaml --run-id <id> --smoke
-DATASETS=sindhu9642/nuclei-seg-corrected GPU=1 launch/kaggle/push.sh notebooks/X.py <slug>
+CONFIG=configs/X.yaml DATASETS=sindhu9642/nuclei-seg-corrected GPU=1 launch/kaggle/push.sh notebooks/train_kernel.py <slug>
 launch/kaggle/pull.sh <slug> runs/<run_id>   # wait, download, wandb sync
 kaggle kernels status luckyx100/<slug>   # kaggle and jupytext are uv tools, no `uv run`
 ```
