@@ -1,6 +1,6 @@
 # 01: Swin-T U-Net with NSL adversarial regularization, 5-fold CV
 
-Status: approved 2026-09-24. Nothing has run.
+Status: approved 2026-09-24. Arm A done; arm B running.
 
 ## Question
 
@@ -143,4 +143,9 @@ The project target of Dice ≥ 0.937 is tracked in every summary but is not this
 
 ## Outcome
 
-Not run yet.
+| Arm | Run | CV Dice (per image) | IoU | Pixel acc. | Pooled Dice | FGSM Dice | Minutes |
+|---|---|---|---|---|---|---|---|
+| A | 20260925-1de4ab8-s01-base | 0.9178 ± 0.0049 | 0.8560 | 0.9786 | 0.9378 | 0.800 | 90 |
+| B | pending | | | | | | |
+
+Arm A per fold: 0.9175, 0.9165, 0.9176, 0.9256, 0.9119.

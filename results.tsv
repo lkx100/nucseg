@@ -1,1 +1,2 @@
 run_id	commit	config	backend	dice	dice_std	iou	pixacc	vram_gb	minutes	status	wandb	description
+20260925-1de4ab8-s01-base	1de4ab8	configs/01-swin-t-base.yaml	kaggle	0.9178	0.0049	0.8560	0.9786	5.74	90	keep	https://wandb.ai/lkx100-kl-university/nucseg/runs/4infdvw8	Spec 01 arm A, Swin-T U-Net baseline, no NSL; pooled dice 0.9378, FGSM-2/255 dice 0.800

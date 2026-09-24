@@ -49,3 +49,11 @@ stopping stays. To keep the validation fold clean, early stopping watches a sepa
 training images). `eval/make_splits.py` found no exact duplicates or overlapping crops, but one near-duplicate pair
 (two frames of the same embryo), which now share a split. The test set and folds match the full dataset's mix of
 image types and nucleus coverage (0.13 to 0.16 against 0.139 overall).
+
+## 2026-09-25: spec 01 arm A (baseline), run 20260925-1de4ab8-s01-base
+CV Dice 0.918 ± 0.005 per image (IoU 0.856, pixel accuracy 0.979). Pooled Dice is 0.938, already above
+0.937, but the target uses the per-image mean, so the gap is 1.9 points. Folds stopped at epochs 36 to 57,
+with stop-set Dice flat near 0.925 from about epoch 25. 90 minutes and 5.7 GB on a T4.
+Weakest types: colour H&E 0.892 and grayscale brightfield 0.898. Fluorescence scores 0.918 (small) and 0.945 (large).
+In the H&E grid, most "false positives" are purple nuclei missing from the ground truth, so label noise caps that type.
+FGSM at 2/255 drops Dice to 0.800, so the baseline is fragile. That is what arm B's NSL term targets.
