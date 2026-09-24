@@ -35,3 +35,17 @@ the run folder. The upload with `wandb sync` failed: no W&B login on this machin
 folder is kept in `runs/env-probe/wandb/` so it can be synced after `wandb login`.
 `wandb login` saved to `~/.netrc`, and `wandb sync` uploaded the probe run
 (https://wandb.ai/lkx100-kl-university/nucseg/runs/imhsavb4). The offline W&B loop works end to end.
+
+## 2026-09-24: goal set, spec 01 drafted
+Goal: foreground Dice ≥ 0.937, with IoU and pixel accuracy reported alongside. The downloaded dataset holds
+only `stage1_train` (670 images, no labelled test set), so we hold out about 10% as a test set and run 5-fold CV
+on the rest. Image types: 546 dark fluorescence, 108 colour brightfield/H&E, 16 grayscale brightfield.
+Nuclei cover 14% of pixels on average. Spec 01 compares a Swin-T U-Net with and without NSL adversarial
+regularization. A brute-force search for overlapping crops was too slow on this machine; `eval/make_splits.py` needs a narrower search.
+
+## 2026-09-24: spec 01 approved, splits built
+Decisions: per-image mean Dice is the headline, the test set is locked, 256 crops now and 512 later, and early
+stopping stays. To keep the validation fold clean, early stopping watches a separate stop set (10% of each fold's
+training images). `eval/make_splits.py` found no exact duplicates or overlapping crops, but one near-duplicate pair
+(two frames of the same embryo), which now share a split. The test set and folds match the full dataset's mix of
+image types and nucleus coverage (0.13 to 0.16 against 0.139 overall).

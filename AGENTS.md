@@ -1,6 +1,8 @@
 # nucseg agent instructions
 
-Nuclei instance segmentation (DSB2018). Read `WORKFLOW.md` before implementing anything.
+Nuclei segmentation (DSB2018). Read `WORKFLOW.md` before implementing anything.
+
+**Goal:** foreground Dice ≥ 0.937 (nucleus vs background). The target is set on purpose; don't lower it. Dice decides; IoU and pixel accuracy are reported alongside. PyTorch only.
 
 ## Hard rules
 - **No training on this machine.** It is low-end and has no GPU. Locally: edits, `--smoke` (2 batches, tiny model, seconds of CPU), and reading pulled results. All real runs go to Kaggle.
