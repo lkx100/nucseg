@@ -38,14 +38,16 @@ def fold_ids(splits, fold):
     return train, stop, val
 
 
+_CACHE = {}
+
+
 def load_samples(root, ids):
-    """id -> (RGB uint8 image, boolean ground-truth mask)."""
-    out = {}
+    """id -> (RGB uint8 image, boolean ground-truth mask). Cached, so later folds reuse earlier reads."""
     for i in ids:
-        d = Path(root) / i
-        img = np.asarray(Image.open(next((d / "images").glob("*.png"))).convert("RGB"))
-        out[i] = (img, gt_mask(d))
-    return out
+        if i not in _CACHE:
+            d = Path(root) / i
+            _CACHE[i] = (np.asarray(Image.open(next((d / "images").glob("*.png"))).convert("RGB")), gt_mask(d))
+    return {i: _CACHE[i] for i in ids}
 
 
 class CropDataset(torch.utils.data.Dataset):

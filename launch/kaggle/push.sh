@@ -43,7 +43,7 @@ if run_id:
     src = (f"# Injected by launch/kaggle/push.sh\nRUN_ID = {run_id!r}\nCONFIG = {config!r}\nCOMMIT = {commit!r}\n"
            "import base64, io, tarfile\nfrom pathlib import Path\nCODE = Path('/tmp/nucseg-code')\n"
            f"BUNDLE = {Path(bundle).read_text()!r}\n"
-           "tarfile.open(fileobj=io.BytesIO(base64.b64decode(BUNDLE)), mode='r:gz').extractall(CODE)\n"
+           "tarfile.open(fileobj=io.BytesIO(base64.b64decode(BUNDLE)), mode='r:gz').extractall(CODE, filter='data')\n"
            "print(RUN_ID, CONFIG, COMMIT[:7])\n")
     nb["cells"].insert(0, {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": src})
 json.dump(nb, open(p, "w"))
