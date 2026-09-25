@@ -1,6 +1,6 @@
 # 02: Finer nucleus edges for the Swin-T U-Net
 
-Status: approved 2026-09-25. A′ done; C and D running.
+Status: approved 2026-09-25. A′ and C done; D running.
 
 ## Question
 
@@ -77,9 +77,14 @@ Order: A′ and C first, then D. If D's first fold takes more than 90 minutes, w
 | Arm | Run | CV Dice | Dice with TTA | IoU | Pooled Dice | FGSM Dice | Epochs per fold | Minutes |
 |---|---|---|---|---|---|---|---|---|
 | A′ | 20260925-b3fe577-s02-base | 0.9143 ± 0.0068 | 0.9155 | 0.8502 | 0.9359 | 0.806 | 60/18/46/37/60 | 96 |
-| C | pending | | | | | | | |
+| C | 20260925-b3fe577-s02-hires | 0.9196 ± 0.0088 | 0.9211 | 0.8588 | 0.9378 | 0.818 | 48/27/36/47/39 | 100 |
 | D | pending | | | | | | | |
 
 A′ per fold: 0.9179, 0.9050, 0.9146, 0.9230, 0.9112 (spec 01 arm A: 0.9175, 0.9165, 0.9176, 0.9256, 0.9119).
 Fold 1 stopped at epoch 18 after a lucky stop-set peak at epoch 8. Without that fold, identical runs differ by
 0.0 to 0.3 points per fold.
+
+C per fold: 0.9202, 0.9146, 0.9219, 0.9325, 0.9090, which is +0.23, +0.97, +0.73, +0.95 and −0.23 against A′.
+C passes the win rule (+0.53, 4 of 5 folds). The gain is concentrated on small fluorescence images (0.914 to
+0.921), as the edge idea predicts. But the margin is near the run-to-run noise: it is only +0.18 against spec 01's
+arm A, and A′'s cut-short fold 1 makes up part of it.

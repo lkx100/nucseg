@@ -72,3 +72,10 @@ The other folds differ by 0.0 to 0.3 points. So early stopping with patience 10 
 and run-to-run noise is about 0.3 points. That puts spec 01's NSL result (0.9144) level with this rerun; only
 its robustness gain stands. TTA adds 0.12 points (0.9155). Next spec should stop early only after a minimum
 number of epochs.
+
+## 2026-09-25: spec 02 arm C (full-resolution skip), run 20260925-b3fe577-s02-hires
+CV Dice 0.9196 (0.9211 with TTA), 0.53 points above A′ and ahead on 4 of 5 folds, so it passes the win rule.
+The gain sits where the edge idea predicts: small fluorescence images rose from 0.914 to 0.921, while H&E and
+brightfield barely moved. The margin is close to the noise, though. Against spec 01's arm A it is only +0.18,
+and part of the gain over A′ comes from A′'s cut-short fold 1. Fold 1 stopped early in C too (epoch 27).
+It costs 5% more time (100 minutes). Still 1.6 points (1.5 with TTA) short of 0.937.
