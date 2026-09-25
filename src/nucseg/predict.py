@@ -29,10 +29,21 @@ def _to_tensor(img):
     return torch.from_numpy(np.array(img)).permute(2, 0, 1)[None].float() / 255
 
 
+def _tta_logits(model, crops):
+    """Mean logits over the 8 orientations of square tiles (4 rotations, each with and without a flip)."""
+    out = 0
+    for k in range(4):
+        for flip in (False, True):
+            t = torch.rot90(crops, k, (2, 3))
+            o = model(t.flip(3) if flip else t)
+            out = out + torch.rot90(o.flip(3) if flip else o, -k, (2, 3))
+    return out / 8
+
+
 @torch.no_grad()
-def predict(model, x, tile, overlap, device, amp, batch=16):
+def predict(model, x, tile, overlap, device, amp, batch=16, tta=False):
     """Probabilities (H, W) for one image. `x` is uint8 (H, W, 3) or a float tensor (1, 3, H, W) in [0, 1].
-    Tile logits are averaged where tiles overlap."""
+    Tile logits are averaged where tiles overlap. With `tta`, each tile's logits are the 8-orientation mean."""
     if isinstance(x, np.ndarray):
         x = _to_tensor(x)
     h, w = x.shape[-2:]
@@ -45,7 +56,7 @@ def predict(model, x, tile, overlap, device, amp, batch=16):
         chunk = pos[i:i + batch]
         crops = torch.cat([x[..., y:y + tile, x0:x0 + tile] for y, x0 in chunk])
         with torch.autocast(device.type, dtype=torch.float16, enabled=amp):
-            logits = model(crops).float()
+            logits = (_tta_logits(model, crops) if tta else model(crops)).float()
         for (y, x0), lg in zip(chunk, logits):
             acc[y:y + tile, x0:x0 + tile] += lg[0]
             cnt[y:y + tile, x0:x0 + tile] += 1

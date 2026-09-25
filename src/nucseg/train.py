@@ -56,12 +56,12 @@ def lr_lambda(warmup, total):
     return f
 
 
-def score(model, samples, ev, device, amp):
+def score(model, samples, ev, device, amp, tta=False):
     """Per-image scores, with the image id attached."""
     model.eval()
     out = []
     for i, (img, gt) in samples.items():
-        probs = predict(model, img, ev["tile"], ev["overlap"], device, amp)
+        probs = predict(model, img, ev["tile"], ev["overlap"], device, amp, tta=tta)
         out.append({"id": i, **image_scores(binarize(probs), gt)})
     return out
 
@@ -139,12 +139,14 @@ def train_fold(k, cfg, splits, data_root, device, smoke, out, wb):
     loader = torch.utils.data.DataLoader(ds, batch_size=tr["batch_size"], shuffle=True, drop_last=True,
                                          num_workers=tr["num_workers"], pin_memory=device.type == "cuda",
                                          persistent_workers=tr["num_workers"] > 0)
-    steps = SMOKE_LIMITS["batches"] if smoke else len(loader)
+    steps = SMOKE_LIMITS["batches"] if smoke else len(loader)  # batches per epoch
     epochs = SMOKE_LIMITS["epochs"] if smoke else tr["max_epochs"]
+    accum = tr.get("accum_steps", 1)  # batches whose gradients are summed per optimizer update
+    updates = steps // accum
 
     model = build_model(cfg, smoke).to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=tr["lr"], weight_decay=tr["weight_decay"])
-    sched = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda(tr["warmup_epochs"] * steps, epochs * steps))
+    sched = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda(tr["warmup_epochs"] * updates, epochs * updates))
     amp = tr["amp"] and device.type == "cuda"
     scaler = torch.amp.GradScaler("cuda", enabled=amp)
     alpha, eps = nsl["alpha"], nsl["eps_255"] / 255
@@ -155,8 +157,9 @@ def train_fold(k, cfg, splits, data_root, device, smoke, out, wb):
         te = time.time()
         model.train()
         losses = []
+        opt.zero_grad(set_to_none=True)
         for step, (x, y) in enumerate(loader):
-            if step >= steps:
+            if step >= updates * accum:
                 break
             x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
             if alpha > 0:
@@ -167,11 +170,12 @@ def train_fold(k, cfg, splits, data_root, device, smoke, out, wb):
                 x_adv = adversarial_neighbour(x, loss, eps, scaler)
                 with torch.autocast(device.type, dtype=torch.float16, enabled=amp):
                     loss = loss + alpha * bce_dice(model(x_adv), y)
-            opt.zero_grad(set_to_none=True)
-            scaler.scale(loss).backward()
-            scaler.step(opt)
-            scaler.update()
-            sched.step()
+            scaler.scale(loss / accum).backward()
+            if (step + 1) % accum == 0:
+                scaler.step(opt)
+                scaler.update()
+                opt.zero_grad(set_to_none=True)
+                sched.step()
             losses.append(loss.item())
         stop_dice = float(np.mean([s["dice"] for s in score(model, stop_s, ev, device, amp)]))
         hist["train_loss"].append(float(np.mean(losses)))
@@ -196,16 +200,22 @@ def train_fold(k, cfg, splits, data_root, device, smoke, out, wb):
     scores = score(model, val_s, ev, device, amp)
     summary = fold_summary(scores)
     summary["robust_dice"] = robust_dice(model, val_s, ev, device, amp)
+    tta_scores = None
+    if ev.get("tta"):
+        tta_scores = score(model, val_s, ev, device, amp, tta=True)
+        summary["tta"] = fold_summary(tta_scores)
     prediction_grid(model, val_s, splits["image_type"], ev, device, amp, out / "plots" / f"fold{k}_preds.png")
     fold = {"fold": k, "epochs_run": len(hist["stop_dice"]), "best_epoch": best_epoch + 1, "stop_dice": best,
             **summary, "minutes": round((time.time() - t0) / 60, 1)}
     log.info(f"fold {k}: val dice {summary['dice']:.4f} iou {summary['iou']:.4f} pixacc {summary['pixacc']:.4f} "
-             f"robust_dice {summary['robust_dice']:.4f} ({fold['minutes']} min)")
+             f"robust_dice {summary['robust_dice']:.4f}"
+             + (f" tta_dice {summary['tta']['dice']:.4f}" if tta_scores else "") + f" ({fold['minutes']} min)")
     if wb:
         import wandb
         wb.log({f"fold{k}/val_{m}": summary[m] for m in ("dice", "iou", "pixacc", "dice_pooled", "robust_dice")}
+               | ({f"fold{k}/val_tta_dice": summary["tta"]["dice"]} if tta_scores else {})
                | {f"fold{k}/preds": wandb.Image(str(out / "plots" / f"fold{k}_preds.png"))})
-    return fold, scores, hist
+    return fold, scores, tta_scores, hist
 
 
 def main():
@@ -247,20 +257,25 @@ def main():
             wb.define_metric(f"fold{k}/*", step_metric=f"fold{k}/epoch")
 
     t0 = time.time()
-    folds, history, by_type = [], {}, defaultdict(list)
+    folds, history, by_type, by_type_tta = [], {}, defaultdict(list), defaultdict(list)
     for k in cfg["train"]["folds"]:
-        fold, scores, hist = train_fold(k, cfg, splits, data_root, device, args.smoke, out, wb)
+        fold, scores, tta_scores, hist = train_fold(k, cfg, splits, data_root, device, args.smoke, out, wb)
         folds.append(fold)
         history[k] = hist
         for s in scores:
             by_type[splits["image_type"][s["id"]]].append(s["dice"])
+        for s in tta_scores or []:
+            by_type_tta[splits["image_type"][s["id"]]].append(s["dice"])
         curves_plot(history, out / "plots" / "curves.png")
 
     cv = cv_summary(folds)
     cv["robust_dice"] = float(np.mean([f["robust_dice"] for f in folds]))
+    if all("tta" in f for f in folds):
+        cv["tta"] = cv_summary([f["tta"] for f in folds])
     metrics = {
         "run_id": args.run_id, "commit": commit, "config": args.config, "smoke": args.smoke,
         "cv": cv, "dice_by_type": {t: float(np.mean(v)) for t, v in sorted(by_type.items())},
+        "dice_by_type_tta": {t: float(np.mean(v)) for t, v in sorted(by_type_tta.items())},
         "folds": folds, "minutes": round((time.time() - t0) / 60, 1),
         "peak_vram_gb": round(torch.cuda.max_memory_allocated() / 1e9, 2) if device.type == "cuda" else 0.0,
         "versions": {"torch": torch.__version__, "timm": __import__("timm").__version__},
@@ -268,6 +283,7 @@ def main():
     (out / "metrics.json").write_text(json.dumps(metrics, indent=1) + "\n")
     summary = (f"RESULT run={args.run_id} dice={cv['dice']:.4f}±{cv['dice_std']:.4f} iou={cv['iou']:.4f} "
                f"pixacc={cv['pixacc']:.4f} dice_pooled={cv['dice_pooled']:.4f} robust_dice={cv['robust_dice']:.4f} "
+               + (f"dice_tta={cv['tta']['dice']:.4f}±{cv['tta']['dice_std']:.4f} " if "tta" in cv else "") +
                f"epochs={'/'.join(str(f['epochs_run']) for f in folds)} vram={metrics['peak_vram_gb']}GB "
                f"time={metrics['minutes']}m")
     (out / "summary.txt").write_text(summary + "\n")
