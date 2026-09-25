@@ -79,3 +79,9 @@ The gain sits where the edge idea predicts: small fluorescence images rose from 
 brightfield barely moved. The margin is close to the noise, though. Against spec 01's arm A it is only +0.18,
 and part of the gain over A′ comes from A′'s cut-short fold 1. Fold 1 stopped early in C too (epoch 27).
 It costs 5% more time (100 minutes). Still 1.6 points (1.5 with TTA) short of 0.937.
+
+## 2026-09-25: spec 02 arm D (2× input scale), run 20260925-cf38771-s02-scale2
+CV Dice 0.9190 (0.9197 with TTA), 0.47 points above A′ and ahead on 4 of 5 folds. It misses the 0.5-point bar
+by a hair, and it is level with C (0.9196) at 2.85 times the time (285 minutes, 13.7 GB). C and D help different
+images: C gains more on small fluorescence (0.921 against 0.919), while D gains on brightfield (0.912 against
+0.893) and H&E (0.894 against 0.889). So combining them may add up. Spec 02 winner: C. Fold 1 stopped early again (epoch 28).

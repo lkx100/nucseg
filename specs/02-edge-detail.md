@@ -1,6 +1,6 @@
 # 02: Finer nucleus edges for the Swin-T U-Net
 
-Status: approved 2026-09-25. A′ and C done; D running.
+Status: done 2026-09-25. Arm C (full-resolution skip) wins; see Outcome.
 
 ## Question
 
@@ -78,7 +78,7 @@ Order: A′ and C first, then D. If D's first fold takes more than 90 minutes, w
 |---|---|---|---|---|---|---|---|---|
 | A′ | 20260925-b3fe577-s02-base | 0.9143 ± 0.0068 | 0.9155 | 0.8502 | 0.9359 | 0.806 | 60/18/46/37/60 | 96 |
 | C | 20260925-b3fe577-s02-hires | 0.9196 ± 0.0088 | 0.9211 | 0.8588 | 0.9378 | 0.818 | 48/27/36/47/39 | 100 |
-| D | pending | | | | | | | |
+| D | 20260925-cf38771-s02-scale2 | 0.9190 ± 0.0082 | 0.9197 | 0.8579 | 0.9380 | 0.833 | 51/28/46/36/41 | 285 |
 
 A′ per fold: 0.9179, 0.9050, 0.9146, 0.9230, 0.9112 (spec 01 arm A: 0.9175, 0.9165, 0.9176, 0.9256, 0.9119).
 Fold 1 stopped at epoch 18 after a lucky stop-set peak at epoch 8. Without that fold, identical runs differ by
@@ -88,3 +88,20 @@ C per fold: 0.9202, 0.9146, 0.9219, 0.9325, 0.9090, which is +0.23, +0.97, +0.73
 C passes the win rule (+0.53, 4 of 5 folds). The gain is concentrated on small fluorescence images (0.914 to
 0.921), as the edge idea predicts. But the margin is near the run-to-run noise: it is only +0.18 against spec 01's
 arm A, and A′'s cut-short fold 1 makes up part of it.
+
+D per fold: 0.9204, 0.9117, 0.9227, 0.9301, 0.9103, which is +0.47 against A′ on average and ahead on 4 of 5 folds.
+That is just under the 0.5-point bar, so D fails the win rule. It matches C at 2.85 times the time.
+
+Dice by image type:
+
+| Type | A′ | C | D |
+|---|---|---|---|
+| Fluorescence, small | 0.914 | **0.921** | 0.919 |
+| Fluorescence, large | 0.944 | 0.946 | 0.946 |
+| Brightfield, grayscale | 0.898 | 0.893 | **0.912** |
+| H&E, colour | 0.888 | 0.889 | **0.894** |
+
+Verdict: C wins and becomes the new baseline. D helps a different set of images than C does, so the two combined
+are worth testing. Early stopping ended fold 1 early in all three arms (epochs 18, 27 and 28), so the next
+spec should stop early only after a minimum number of epochs. Best TTA Dice so far is 0.9211 (arm C), 1.6 points
+short of 0.937.
