@@ -24,6 +24,7 @@ Nuclei segmentation (DSB2018). Read `WORKFLOW.md` before implementing anything.
 - `launch/`: backend scripts (`kaggle/push.sh`, `kaggle/pull.sh`)
 - `notebooks/`: jupytext `# %%` `.py` files only
 - `runs/<run_id>/`: pulled outputs
+- `reports/`: overview figures for humans, redrawn by `uv run python reports/make_figures.py` after each run
 
 `data/` and `runs/` are gitignored.
 
