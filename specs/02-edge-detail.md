@@ -1,6 +1,6 @@
 # 02: Finer nucleus edges for the Swin-T U-Net
 
-Status: draft, waiting for approval. Nothing has run.
+Status: approved 2026-09-25. Running A′ and C.
 
 ## Question
 
