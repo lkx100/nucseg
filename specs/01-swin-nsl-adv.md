@@ -156,3 +156,6 @@ so it fails both parts of the win condition. It is far more robust, though. Unde
 falls from 0.918 to 0.800 for arm A but stays at 0.918 for arm B. So the NSL term trades a little clean Dice for
 robustness, at 2.4 times the GPU time. The baseline (arm A) stays the reference for the Dice target, which is
 1.9 points away.
+
+Later finding (spec 02, arm A′): an identical rerun of arm A scored 0.9143, because early stopping cut one fold
+short. So arm B's clean Dice (0.9144) is within run-to-run noise of the baseline. Only its robustness gain is clear.

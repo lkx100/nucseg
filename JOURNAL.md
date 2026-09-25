@@ -64,3 +64,11 @@ CV Dice 0.914 ± 0.005, 0.34 points below arm A, and lower on all 5 folds (by 0.
 from 0.800 to 0.918, about equal to its clean Dice. It cost 2.4 times the GPU time (215 minutes).
 The prediction grids look the same as arm A's. Arm B's pull failed on a network blip in `pull.sh`'s status loop;
 the loop now retries.
+
+## 2026-09-25: spec 02 arm A′ (baseline rerun), run 20260925-b3fe577-s02-base
+Identical setup to spec 01 arm A, but CV Dice 0.9143 against 0.9178. Most of the gap is fold 1: a lucky stop-set
+spike at epoch 8 ended training at epoch 18 while the learning rate was still high (0.9050 against 0.9165).
+The other folds differ by 0.0 to 0.3 points. So early stopping with patience 10 on a 49-image stop set is fragile,
+and run-to-run noise is about 0.3 points. That puts spec 01's NSL result (0.9144) level with this rerun; only
+its robustness gain stands. TTA adds 0.12 points (0.9155). Next spec should stop early only after a minimum
+number of epochs.

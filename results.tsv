@@ -1,3 +1,4 @@
 run_id	commit	config	backend	dice	dice_std	iou	pixacc	vram_gb	minutes	status	wandb	description
 20260925-1de4ab8-s01-base	1de4ab8	configs/01-swin-t-base.yaml	kaggle	0.9178	0.0049	0.8560	0.9786	5.74	90	keep	https://wandb.ai/lkx100-kl-university/nucseg/runs/4infdvw8	Spec 01 arm A, Swin-T U-Net baseline, no NSL; pooled dice 0.9378, FGSM-2/255 dice 0.800
 20260925-d981a3d-s01-nsl	d981a3d	configs/01-swin-t-nsl.yaml	kaggle	0.9144	0.0047	0.8514	0.9775	6.51	215	discard	https://wandb.ai/lkx100-kl-university/nucseg/runs/7wsd4jcw	Spec 01 arm B, NSL adversarial alpha=0.2 eps=2/255; clean dice -0.34 pts vs A on all 5 folds, FGSM-2/255 dice 0.918 (A: 0.800)
+20260925-b3fe577-s02-base	b3fe577	configs/02-base.yaml	kaggle	0.9143	0.0068	0.8502	0.9777	5.60	96	keep	https://wandb.ai/lkx100-kl-university/nucseg/runs/lhisoglc	Spec 02 arm A-prime, rerun of spec 01 baseline; TTA dice 0.9155; fold 1 stopped at epoch 18 (best 8), -1.15 pts vs spec 01 arm A

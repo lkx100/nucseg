@@ -1,6 +1,6 @@
 # 02: Finer nucleus edges for the Swin-T U-Net
 
-Status: approved 2026-09-25. Running A′ and C.
+Status: approved 2026-09-25. A′ done; C and D running.
 
 ## Question
 
@@ -74,4 +74,12 @@ Order: A′ and C first, then D. If D's first fold takes more than 90 minutes, w
 
 ## Outcome
 
-Not run yet.
+| Arm | Run | CV Dice | Dice with TTA | IoU | Pooled Dice | FGSM Dice | Epochs per fold | Minutes |
+|---|---|---|---|---|---|---|---|---|
+| A′ | 20260925-b3fe577-s02-base | 0.9143 ± 0.0068 | 0.9155 | 0.8502 | 0.9359 | 0.806 | 60/18/46/37/60 | 96 |
+| C | pending | | | | | | | |
+| D | pending | | | | | | | |
+
+A′ per fold: 0.9179, 0.9050, 0.9146, 0.9230, 0.9112 (spec 01 arm A: 0.9175, 0.9165, 0.9176, 0.9256, 0.9119).
+Fold 1 stopped at epoch 18 after a lucky stop-set peak at epoch 8. Without that fold, identical runs differ by
+0.0 to 0.3 points per fold.
