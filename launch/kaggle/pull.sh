@@ -10,7 +10,11 @@ out=${2:?usage: pull.sh <slug> <out_dir>}
 user=$(python3 -c "import json,os;print(json.load(open(os.path.expanduser('~/.kaggle/credentials.json')))['username'])")
 
 while true; do
-  status=$(kaggle kernels status "$user/$slug" 2>&1)
+  # A failed status call (network blip) is retried, not fatal
+  if ! status=$(kaggle kernels status "$user/$slug" 2>&1); then
+    sleep 30
+    continue
+  fi
   case "$status" in
     *COMPLETE*|*ERROR*|*CANCEL*) break ;;
   esac

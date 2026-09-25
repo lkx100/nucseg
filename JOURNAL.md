@@ -57,3 +57,10 @@ with stop-set Dice flat near 0.925 from about epoch 25. 90 minutes and 5.7 GB on
 Weakest types: colour H&E 0.892 and grayscale brightfield 0.898. Fluorescence scores 0.918 (small) and 0.945 (large).
 In the H&E grid, most "false positives" are purple nuclei missing from the ground truth, so label noise caps that type.
 FGSM at 2/255 drops Dice to 0.800, so the baseline is fragile. That is what arm B's NSL term targets.
+
+## 2026-09-25: spec 01 arm B (NSL), run 20260925-d981a3d-s01-nsl
+CV Dice 0.914 ± 0.005, 0.34 points below arm A, and lower on all 5 folds (by 0.04 to 0.56 points). So NSL at
+α = 0.2, ε = 2/255 fails the win condition. It did what adversarial training promises: Dice under FGSM 2/255 rose
+from 0.800 to 0.918, about equal to its clean Dice. It cost 2.4 times the GPU time (215 minutes).
+The prediction grids look the same as arm A's. Arm B's pull failed on a network blip in `pull.sh`'s status loop;
+the loop now retries.

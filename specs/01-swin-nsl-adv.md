@@ -1,6 +1,6 @@
 # 01: Swin-T U-Net with NSL adversarial regularization, 5-fold CV
 
-Status: approved 2026-09-24. Arm A done; arm B running.
+Status: done 2026-09-25. NSL did not raise Dice (see Outcome).
 
 ## Question
 
@@ -146,6 +146,13 @@ The project target of Dice ≥ 0.937 is tracked in every summary but is not this
 | Arm | Run | CV Dice (per image) | IoU | Pixel acc. | Pooled Dice | FGSM Dice | Minutes |
 |---|---|---|---|---|---|---|---|
 | A | 20260925-1de4ab8-s01-base | 0.9178 ± 0.0049 | 0.8560 | 0.9786 | 0.9378 | 0.800 | 90 |
-| B | pending | | | | | | |
+| B | 20260925-d981a3d-s01-nsl | 0.9144 ± 0.0047 | 0.8514 | 0.9775 | 0.9360 | 0.918 | 215 |
 
 Arm A per fold: 0.9175, 0.9165, 0.9176, 0.9256, 0.9119.
+Arm B per fold: 0.9119, 0.9135, 0.9171, 0.9208, 0.9087.
+
+Verdict: no gain at ε = 2/255, α = 0.2. Arm B scores lower than arm A on all 5 folds, by 0.34 points on average,
+so it fails both parts of the win condition. It is far more robust, though. Under an FGSM attack at 2/255, Dice
+falls from 0.918 to 0.800 for arm A but stays at 0.918 for arm B. So the NSL term trades a little clean Dice for
+robustness, at 2.4 times the GPU time. The baseline (arm A) stays the reference for the Dice target, which is
+1.9 points away.
