@@ -135,7 +135,8 @@ def train_fold(k, cfg, splits, data_root, device, smoke, out, wb):
     val_s = load_samples(data_root, val_ids)
     log.info(f"fold {k}: train={len(train_s)} stop={len(stop_s)} val={len(val_s)} loaded in {time.time() - t0:.0f}s")
 
-    ds = CropDataset(train_s, dcfg["crop"], dcfg["crops_per_image"], dcfg["scale"], dcfg["brightness"], dcfg["contrast"])
+    ds = CropDataset(train_s, dcfg["crop"], dcfg["crops_per_image"], dcfg["scale"], dcfg["brightness"], dcfg["contrast"],
+                     dcfg.get("aug"))
     loader = torch.utils.data.DataLoader(ds, batch_size=tr["batch_size"], shuffle=True, drop_last=True,
                                          num_workers=tr["num_workers"], pin_memory=device.type == "cuda",
                                          persistent_workers=tr["num_workers"] > 0)

@@ -5,7 +5,8 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from PIL import Image
+import torch.nn.functional as F
+from PIL import Image, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -50,17 +51,44 @@ def load_samples(root, ids):
     return {i: _CACHE[i] for i in ids}
 
 
+def elastic(img, mask, rng, px, grid):
+    """Smooth random warp: displacements with std `px` pixels on a `grid` x `grid` lattice, upsampled bicubically."""
+    h, w = mask.shape
+    d = torch.from_numpy(rng.normal(0, px, (1, 2, grid, grid)).astype(np.float32))
+    d = F.interpolate(d, size=(h, w), mode="bicubic", align_corners=True)
+    d = d * torch.tensor([2 / w, 2 / h]).view(1, 2, 1, 1)  # pixels -> grid_sample's [-1, 1] units
+    ys, xs = torch.meshgrid(torch.linspace(-1, 1, h), torch.linspace(-1, 1, w), indexing="ij")
+    g = (torch.stack([xs, ys])[None] + d).permute(0, 2, 3, 1)
+    im = torch.from_numpy(np.array(img)).permute(2, 0, 1)[None].float()
+    m = torch.from_numpy(np.array(mask)).float()[None, None]
+    im = F.grid_sample(im, g, mode="bilinear", padding_mode="reflection", align_corners=True)
+    m = F.grid_sample(m, g, mode="nearest", padding_mode="reflection", align_corners=True)
+    return im[0].permute(1, 2, 0).round().clamp(0, 255).byte().numpy(), m[0, 0].numpy() > 0.5
+
+
+def hue_saturation(img, rng, hue, saturation):
+    """Shift hue by up to `hue` of the colour wheel and scale saturation by 1 +/- `saturation`.
+    Grayscale images have zero saturation, so only colour (H&E, brightfield) images change."""
+    hsv = np.asarray(Image.fromarray(img).convert("HSV")).astype(np.int16)
+    hsv[..., 0] = (hsv[..., 0] + int(round(rng.uniform(-hue, hue) * 255))) % 256
+    hsv[..., 1] = np.clip(hsv[..., 1] * (1 + rng.uniform(-saturation, saturation)), 0, 255)
+    return np.asarray(Image.fromarray(hsv.astype(np.uint8), "HSV").convert("RGB"))
+
+
 class CropDataset(torch.utils.data.Dataset):
     """Random crops with scale, flip, 90-degree rotation and brightness/contrast jitter.
 
+    `aug` (optional) adds elastic warps, hue/saturation, gamma, blur and noise. Without it no extra
+    random numbers are drawn, so older configs get the same crops as before.
     One epoch visits every image `crops_per_image` times. Returns float images in [0, 1] (3, crop, crop)
     and float masks (1, crop, crop).
     """
 
-    def __init__(self, samples, crop, crops_per_image, scale, brightness, contrast):
+    def __init__(self, samples, crop, crops_per_image, scale, brightness, contrast, aug=None):
         self.items = list(samples.values())
         self.crop, self.k = crop, crops_per_image
         self.scale, self.brightness, self.contrast = scale, brightness, contrast
+        self.aug = aug
 
     def __len__(self):
         return len(self.items) * self.k
@@ -87,8 +115,20 @@ class CropDataset(torch.utils.data.Dataset):
             img, mask = img[::-1], mask[::-1]
         r = rng.integers(4)
         img, mask = np.rot90(img, r), np.rot90(mask, r)
+        a = self.aug
+        if a and rng.random() < a["elastic_p"]:
+            img, mask = elastic(img, mask, rng, a["elastic_px"], a["elastic_grid"])
+        if a:
+            img = hue_saturation(img, rng, a["hue"], a["saturation"])
+        if a and rng.random() < a["blur_p"]:
+            img = np.asarray(Image.fromarray(np.ascontiguousarray(img)).filter(
+                ImageFilter.GaussianBlur(rng.uniform(*a["blur_sigma"]))))
         x = img.astype(np.float32) / 255
+        if a:
+            x = x ** float(np.exp(rng.uniform(*np.log(a["gamma"]))))  # log-uniform, so 1/g and g are equally likely
         x = x * (1 + rng.uniform(-self.contrast, self.contrast)) + rng.uniform(-self.brightness, self.brightness)
+        if a and rng.random() < a["noise_p"]:
+            x = x + rng.normal(0, rng.uniform(0, a["noise_std"]), x.shape).astype(np.float32)
         x = np.clip(x, 0, 1)
         return (torch.from_numpy(np.ascontiguousarray(x.transpose(2, 0, 1))),
                 torch.from_numpy(np.ascontiguousarray(mask, dtype=np.float32))[None])
