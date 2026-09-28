@@ -92,3 +92,9 @@ stain jitter aimed at H&E, but H&E stayed at 0.889. Brightfield rose from 0.893 
 by 0.1 to 0.2. Fold 1 trained to epoch 53 instead of stopping at 27, and the fold spread shrank. Best TTA Dice
 so far, still 1.4 points short. The kernel waited 6 h 20 min for a GPU while `kaggle kernels status` said RUNNING;
 the session itself took 2.06 h.
+
+## 2026-09-28: spec 03 arm E (C + NSL at ε 1/255), run 20260928-f8051ad-s03-hires-nsl1
+CV Dice 0.9197 (0.9212 with TTA), level with C (+0.01) and ahead on 3 of 5 folds, so no win. FGSM 2/255 Dice
+rose from 0.818 to 0.905, the same trade as spec 01's ε 2/255. It took 227 minutes, 2.3 times C. That closes NSL
+for the Dice target: it buys robustness, not accuracy. Both spec 03 and 04 kernels waited about 6 hours for a
+GPU and started training at the same minute, so the delay was Kaggle's queue, not our code.
