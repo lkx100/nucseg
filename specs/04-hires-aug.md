@@ -8,7 +8,7 @@ Does stronger data augmentation raise per-image CV Dice of arm C, the spec 02 wi
 
 ## Why
 
-Arm C trains with random crops, scaling between 0.75 and 1.25, flips, 90° rotations and small brightness and contrast changes. The weakest image types are H&E (0.889) and grayscale brightfield (0.893). They are about 16% of the data, so each fold trains on only about 70 of them. Colour and stain changes give the model more varied examples of exactly those images. Warps, blur and noise add shape, focus and camera variation to all types.
+Arm C trains with random crops, scaling between 0.75 and 1.25, flips, 90° rotations and small brightness and contrast changes. The weakest image types are H&E (0.889) and grayscale brightfield (0.893). They are 124 of the 670 images (18%), so each fold trains on only about 80 of them. Colour and stain changes give the model more varied examples of exactly those images. Warps, blur and noise add shape, focus and camera variation to all types.
 
 This runs on arm C, not on spec 03's C + NSL, so it changes one thing against a finished baseline and can run while spec 03 is still going. If both win, a later run combines them.
 

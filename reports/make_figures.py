@@ -28,6 +28,8 @@ LABELS = {  # slug -> short name for plots
     "s02-base": "02 A′\nbaseline rerun",
     "s02-hires": "02 C\nfull-res skip",
     "s02-scale2": "02 D\n2× input scale",
+    "s03-hires-nsl1": "03 E\nC + NSL 1/255",
+    "s04-hires-aug": "04 F\nC + strong aug",
 }
 TYPES = {  # image_type key -> plain name
     "dark-gray/small": "Fluorescence, small",
@@ -46,12 +48,12 @@ def load_runs():
         m = json.loads((ROOT / "runs" / row["run_id"] / "metrics.json").read_text())
         slug = row["run_id"].split("-", 2)[2]
         runs.append(dict(row=row, m=m, slug=slug, label=LABELS.get(slug, slug)))
-    return runs
+    return sorted(runs, key=lambda r: r["label"])
 
 
 def progress(runs):
     best = max(runs, key=lambda r: r["m"]["cv"].get("tta", r["m"]["cv"])["dice"])
-    fig, ax = plt.subplots(figsize=(9, 5))
+    fig, ax = plt.subplots(figsize=(11, 5))
     x = np.arange(len(runs))
     for i, r in enumerate(runs):
         cv = r["m"]["cv"]
@@ -84,8 +86,9 @@ def progress(runs):
 
 def folds(runs):
     fig, ax = plt.subplots(figsize=(9, 4.5))
-    colours = [GRAY, "#8e6bb8", BLUE, GOLD, GREEN]
-    for r, c in zip(runs, colours):
+    shown = {"s02-base": GRAY, "s02-hires": GOLD, "s03-hires-nsl1": "#8e6bb8", "s04-hires-aug": GREEN}
+    for r in [r for r in runs if r["slug"] in shown]:
+        c = shown[r["slug"]]
         f = r["m"]["folds"]
         ax.plot([d["fold"] for d in f], [d["dice"] for d in f], "o-", color=c, lw=2, label=r["label"].replace("\n", ": "))
         early = [d for d in f if d["epochs_run"] < 30]
@@ -95,7 +98,7 @@ def folds(runs):
     ax.text(4.2, TARGET + 0.0005, "target", color=RED, va="bottom", ha="right")
     ax.set_xticks(range(5), [f"fold {k}\n(~120 images)" for k in range(5)])
     ax.set_ylabel("Dice on the held-out fold")
-    ax.set_title("Every fold, every run: fold 3 is easiest, fold 4 hardest", loc="left", weight="bold")
+    ax.set_title("Every fold: fold 3 is easiest, fold 4 hardest", loc="left", weight="bold")
     ax.legend(frameon=False, fontsize=8, loc="upper left", ncol=2)
     ax.set_ylim(0.90, 0.945)
     fig.tight_layout()
@@ -106,10 +109,10 @@ def by_type(runs, splits):
     counts = {t: 0 for t in TYPES}
     for t in splits["image_type"].values():
         counts[t] += 1
-    shown = [r for r in runs if r["slug"] in ("s02-base", "s02-hires", "s02-scale2")]
+    shown = [r for r in runs if r["slug"] in ("s02-hires", "s03-hires-nsl1", "s04-hires-aug")]
     fig, ax = plt.subplots(figsize=(9, 4.5))
     w = 0.26
-    for j, (r, c) in enumerate(zip(shown, (BLUE, GOLD, GREEN))):
+    for j, (r, c) in enumerate(zip(shown, (GOLD, "#8e6bb8", GREEN))):
         vals = [r["m"]["dice_by_type"][t] for t in TYPES]
         bars = ax.bar(np.arange(len(TYPES)) + (j - 1) * w, vals, w, color=c, label=r["label"].replace("\n", ": "))
         for b, v in zip(bars, vals):
@@ -125,7 +128,7 @@ def by_type(runs, splits):
 
 
 def cost(runs):
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(10, 4.2))
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(11, 4.2))
     for r in runs:
         m = r["m"]
         a1.scatter(m["minutes"], m["cv"]["dice"], s=m["peak_vram_gb"] * 25, color=GOLD if r["slug"] == "s02-hires" else BLUE,
@@ -148,7 +151,7 @@ def cost(runs):
     a2.set_xticks(x, [r["label"].split("\n")[0] for r in runs])
     a2.set_ylim(0.75, 0.97)
     a2.set_ylabel("Dice")
-    a2.set_title("NSL (01 B) bought robustness, not accuracy", loc="left", weight="bold")
+    a2.set_title("NSL (01 B, 03 E) bought robustness, not accuracy", loc="left", weight="bold")
     a2.legend(frameon=False, fontsize=8, loc="upper right")
     fig.tight_layout()
     fig.savefig(OUT / "5-cost-and-robustness.png")
