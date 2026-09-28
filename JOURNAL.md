@@ -85,3 +85,10 @@ CV Dice 0.9190 (0.9197 with TTA), 0.47 points above A′ and ahead on 4 of 5 fol
 by a hair, and it is level with C (0.9196) at 2.85 times the time (285 minutes, 13.7 GB). C and D help different
 images: C gains more on small fluorescence (0.921 against 0.919), while D gains on brightfield (0.912 against
 0.893) and H&E (0.894 against 0.889). So combining them may add up. Spec 02 winner: C. Fold 1 stopped early again (epoch 28).
+
+## 2026-09-28: spec 04 arm F (strong augmentation), run 20260928-a6250b2-s04-hires-aug
+CV Dice 0.9213 (0.9227 with TTA), +0.17 points against C and ahead on 3 of 5 folds, so no win. The colour and
+stain jitter aimed at H&E, but H&E stayed at 0.889. Brightfield rose from 0.893 to 0.901 and fluorescence moved
+by 0.1 to 0.2. Fold 1 trained to epoch 53 instead of stopping at 27, and the fold spread shrank. Best TTA Dice
+so far, still 1.4 points short. The kernel waited 6 h 20 min for a GPU while `kaggle kernels status` said RUNNING;
+the session itself took 2.06 h.

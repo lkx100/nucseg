@@ -1,6 +1,6 @@
 # 04: Strong augmentation on the full-resolution-skip model
 
-Status: approved 2026-09-28, running.
+Status: done 2026-09-28. No win: +0.17 points, 3 of 5 folds (see Outcome).
 
 ## Question
 
@@ -47,4 +47,26 @@ Augmentation costs about 16 ms per crop on the CPU, which 2 loader workers hide 
 
 ## Outcome
 
-Pending.
+| Arm | Run | CV Dice | Dice with TTA | IoU | Pooled Dice | FGSM Dice | Epochs per fold | Minutes |
+|---|---|---|---|---|---|---|---|---|
+| C | 20260925-b3fe577-s02-hires | 0.9196 ± 0.0088 | 0.9211 | 0.8588 | 0.9378 | 0.818 | 48/27/36/47/39 | 100 |
+| F | 20260928-a6250b2-s04-hires-aug | 0.9213 ± 0.0059 | 0.9227 | 0.8608 | 0.9387 | 0.833 | 60/53/34/34/46 | 123 |
+
+F per fold: 0.9204, 0.9177, 0.9201, 0.9314, 0.9167, which is +0.02, +0.31, −0.18, −0.11 and +0.77 against C.
+The mean gain is +0.17 points and F is ahead on 3 of 5 folds, so it fails both parts of the win rule.
+
+Dice by image type:
+
+| Type | C | F |
+|---|---|---|
+| Fluorescence, small | 0.921 | 0.924 |
+| Fluorescence, large | 0.946 | 0.947 |
+| Brightfield, grayscale | 0.893 | 0.901 |
+| H&E, colour | 0.889 | 0.889 |
+
+The colour and stain changes were meant for H&E, and H&E did not move. The small gains are on fluorescence and
+brightfield. Fold 1 no longer stopped early (epoch 53 against 27), and the spread across folds shrank
+(std 0.0059 against 0.0088). The prediction grids look like C's: the errors are still thin rims at nucleus edges.
+
+Verdict: within run-to-run noise of C, so C stays the baseline. F has the best TTA Dice so far (0.9227), 1.4
+points short of 0.937.
