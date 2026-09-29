@@ -71,7 +71,7 @@ def robust_dice(model, samples, ev, device, amp):
     eps = ev["robust_eps_255"] / 255
     dice = []
     for img, gt in samples.values():
-        x_adv = fgsm(model, img, gt, eps, ev["tile"], ev["overlap"], device)
+        x_adv = fgsm(model, img, gt, eps, ev["tile"], ev["overlap"], device, batch=ev.get("robust_batch", 16))
         dice.append(image_scores(binarize(predict(model, x_adv, ev["tile"], ev["overlap"], device, amp)), gt)["dice"])
     return float(np.mean(dice))
 
