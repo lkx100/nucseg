@@ -1,6 +1,6 @@
 # 04: Strong augmentation on the full-resolution-skip model
 
-Status: done 2026-09-28. No win: +0.17 points, 3 of 5 folds (see Outcome).
+Status: done 2026-09-28. No win: +0.16 points, 3 of 5 folds (see Outcome).
 
 ## Question
 
@@ -53,7 +53,7 @@ Augmentation costs about 16 ms per crop on the CPU, which 2 loader workers hide 
 | F | 20260928-a6250b2-s04-hires-aug | 0.9213 ± 0.0059 | 0.9227 | 0.8608 | 0.9387 | 0.833 | 60/53/34/34/46 | 123 |
 
 F per fold: 0.9204, 0.9177, 0.9201, 0.9314, 0.9167, which is +0.02, +0.31, −0.18, −0.11 and +0.77 against C.
-The mean gain is +0.17 points and F is ahead on 3 of 5 folds, so it fails both parts of the win rule.
+The mean gain is +0.16 points and F is ahead on 3 of 5 folds, so it fails both parts of the win rule.
 
 Dice by image type:
 
