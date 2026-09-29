@@ -30,6 +30,7 @@ LABELS = {  # slug -> short name for plots
     "s02-scale2": "02 D\n2× input scale",
     "s03-hires-nsl1": "03 E\nC + NSL 1/255",
     "s04-hires-aug": "04 F\nC + strong aug",
+    "s05-hires-scale2": "05 G\nC + 2× scale",
 }
 TYPES = {  # image_type key -> plain name
     "dark-gray/small": "Fluorescence, small",
@@ -86,7 +87,7 @@ def progress(runs):
 
 def folds(runs):
     fig, ax = plt.subplots(figsize=(9, 4.5))
-    shown = {"s02-base": GRAY, "s02-hires": GOLD, "s03-hires-nsl1": "#8e6bb8", "s04-hires-aug": GREEN}
+    shown = {"s02-base": GRAY, "s02-hires": GOLD, "s04-hires-aug": GREEN, "s05-hires-scale2": BLUE}
     for r in [r for r in runs if r["slug"] in shown]:
         c = shown[r["slug"]]
         f = r["m"]["folds"]
@@ -109,12 +110,12 @@ def by_type(runs, splits):
     counts = {t: 0 for t in TYPES}
     for t in splits["image_type"].values():
         counts[t] += 1
-    shown = [r for r in runs if r["slug"] in ("s02-hires", "s03-hires-nsl1", "s04-hires-aug")]
+    shown = [r for r in runs if r["slug"] in ("s02-hires", "s02-scale2", "s04-hires-aug", "s05-hires-scale2")]
     fig, ax = plt.subplots(figsize=(9, 4.5))
-    w = 0.26
-    for j, (r, c) in enumerate(zip(shown, (GOLD, "#8e6bb8", GREEN))):
+    w = 0.2
+    for j, (r, c) in enumerate(zip(shown, (GOLD, GRAY, GREEN, BLUE))):
         vals = [r["m"]["dice_by_type"][t] for t in TYPES]
-        bars = ax.bar(np.arange(len(TYPES)) + (j - 1) * w, vals, w, color=c, label=r["label"].replace("\n", ": "))
+        bars = ax.bar(np.arange(len(TYPES)) + (j - 1.5) * w, vals, w, color=c, label=r["label"].replace("\n", ": "))
         for b, v in zip(bars, vals):
             ax.text(b.get_x() + w / 2, v + 0.001, f"{v:.3f}", ha="center", fontsize=7, rotation=90)
     ax.axhline(TARGET, color=RED, ls="--", lw=2)

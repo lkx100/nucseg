@@ -1,6 +1,6 @@
 # 05: The full-resolution-skip model at 2× input scale
 
-Status: running.
+Status: done 2026-09-30. No win: +0.00 points, 4 of 5 folds (see Outcome).
 
 ## Question
 
@@ -38,3 +38,38 @@ If its TTA Dice reaches 0.937, we ask whether to score the locked test set.
 ## Budget
 
 Arm D took 285 minutes (fold 0: 73 minutes for 51 epochs). The stem at 512 adds some compute, so arm G should take 5 to 6 hours, and at most about 7.5 hours if every fold runs all 60 epochs. That fits the 12-hour cap. If fold 0 takes more than 100 minutes, we stop and ask.
+
+## Outcome
+
+| Arm | Run | CV Dice | Dice with TTA | IoU | Pooled Dice | FGSM Dice | Epochs per fold | Minutes |
+|---|---|---|---|---|---|---|---|---|
+| C | 20260925-b3fe577-s02-hires | 0.9196 ± 0.0088 | 0.9211 | 0.8588 | 0.9378 | 0.818 | 48/27/36/47/39 | 100 |
+| D | 20260925-cf38771-s02-scale2 | 0.9190 ± 0.0082 | 0.9197 | 0.8579 | 0.9380 | 0.833 | 51/28/46/36/41 | 285 |
+| G | 20260929-e7415b1-s05-hires-scale2 | 0.9196 ± 0.0109 | 0.9206 | 0.8588 | 0.9376 | 0.824 | 13/35/55/42/47 | 343 |
+
+G per fold: 0.9070, 0.9221, 0.9256, 0.9334, 0.9102, which is −1.33, +0.74, +0.37, +0.09 and +0.13 against C.
+G is ahead on 4 of 5 folds, but its mean is level with C (+0.00), so it fails the 0.5-point part of the win rule.
+
+Fold 0 decides the result. Its stop-set Dice peaked at 0.913 in epoch 3, still in warm-up, and no later epoch beat
+that peak within the 10-epoch patience, so it stopped at epoch 13 and kept the epoch-3 weights. On the other four folds G averages
++0.33 against C. Fold 1 went the other way: its stop-set Dice dropped from 0.935 to about 0.90 after epoch 25 and
+stayed there, and the fold kept its epoch-25 weights.
+
+Dice by image type:
+
+| Type | Images | C | D | G |
+|---|---|---|---|---|
+| Fluorescence, small | 434 | 0.921 | 0.919 | 0.920 |
+| Fluorescence, large | 112 | 0.946 | 0.946 | 0.947 |
+| H&E, colour | 108 | 0.889 | 0.894 | 0.892 |
+| Brightfield, grayscale | 16 | 0.893 | 0.912 | 0.908 |
+
+G keeps most of D's brightfield and H&E gains, but not C's small-fluorescence gain. Brightfield is only 16 images,
+so its swings are noisy. The prediction grids look like C's: the errors are thin rims at nucleus edges.
+
+Peak GPU memory was 15.2 GB, just inside the T4's limit, well above the 10 GB estimated for training. The peak
+is logged for the whole run, so it doesn't show which step set it. The run took 343 minutes, 3.4 times C.
+
+Verdict: C stays the baseline. The 2× scale is too costly for what it gives. Early stopping has now cut one fold
+short before epoch 30 in 4 of the 6 runs since spec 02 began (A′, C, D and G), so the next spec should fix it: stop early only after a minimum
+number of epochs, or train a fixed number of epochs.

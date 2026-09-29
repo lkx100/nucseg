@@ -98,3 +98,10 @@ CV Dice 0.9197 (0.9212 with TTA), level with C (+0.01) and ahead on 3 of 5 folds
 rose from 0.818 to 0.905, the same trade as spec 01's ε 2/255. It took 227 minutes, 2.3 times C. That closes NSL
 for the Dice target: it buys robustness, not accuracy. Both spec 03 and 04 kernels waited about 6 hours for a
 GPU and started training at the same minute, so the delay was Kaggle's queue, not our code.
+
+## 2026-09-30: spec 05 arm G (C at 2× input scale), run 20260929-e7415b1-s05-hires-scale2
+CV Dice 0.9196 (0.9206 with TTA), exactly level with C and ahead on 4 of 5 folds, so no win. Fold 0 lost 1.33
+points: its stop-set Dice peaked at epoch 3, during warm-up, and training stopped at epoch 13. The other folds gained
+0.33 on average. G kept most of D's brightfield and H&E gains but not C's small-fluorescence gain. It took 343
+minutes (3.4 times C) and peaked at 15.2 GB, close to the T4's limit. Early stopping cut a fold short in 4 of the 6 runs
+since spec 02 began, so fixing it comes next.
