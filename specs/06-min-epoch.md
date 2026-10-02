@@ -1,6 +1,6 @@
 # 06: No early stop before epoch 30, with and without strong augmentation
 
-Status: draft 2026-10-02, waiting for approval.
+Status: approved 2026-10-02, running.
 
 ## Question
 
