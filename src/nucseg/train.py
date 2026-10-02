@@ -2,7 +2,7 @@
 
     python -m nucseg.train --config configs/X.yaml --run-id <id> [--smoke] [--out DIR] [--data DIR]
 
-Trains one model per CV fold. Early stopping watches the fold's stop set. The validation fold scores
+Trains one model per CV fold. Early stopping watches the fold's stop set, from `min_epochs` on. The validation fold scores
 the kept weights once, at the end. Writes metrics.json, summary.txt, train.log, config.yaml, plots/
 and ckpt/ into the output directory.
 """
@@ -142,6 +142,7 @@ def train_fold(k, cfg, splits, data_root, device, smoke, out, wb):
                                          persistent_workers=tr["num_workers"] > 0)
     steps = SMOKE_LIMITS["batches"] if smoke else len(loader)  # batches per epoch
     epochs = SMOKE_LIMITS["epochs"] if smoke else tr["max_epochs"]
+    min_epochs = min(tr.get("min_epochs", 0), epochs)  # epochs before weights are kept or patience counts
     accum = tr.get("accum_steps", 1)  # batches whose gradients are summed per optimizer update
     updates = steps // accum
 
@@ -181,7 +182,9 @@ def train_fold(k, cfg, splits, data_root, device, smoke, out, wb):
         stop_dice = float(np.mean([s["dice"] for s in score(model, stop_s, ev, device, amp)]))
         hist["train_loss"].append(float(np.mean(losses)))
         hist["stop_dice"].append(stop_dice)
-        if stop_dice > best:
+        if epoch + 1 < min_epochs:
+            pass
+        elif stop_dice > best:
             best, best_epoch, bad = stop_dice, epoch, 0
             best_state = {n: v.detach().cpu().clone() for n, v in model.state_dict().items()}
         else:
