@@ -3,10 +3,17 @@ import torch
 import torch.nn.functional as F
 
 
-def bce_dice(logits, target):
-    """BCE plus soft Dice (per image, then averaged), equal weights."""
+def bce_dice(logits, target, edge_weight=0.0, edge_px=2):
+    """BCE plus soft Dice (per image, then averaged), equal weights. With `edge_weight`, BCE counts the pixels
+    within `edge_px` of a mask boundary 1 + edge_weight times; the weights are scaled to a mean of 1."""
     logits = logits.float()
-    bce = F.binary_cross_entropy_with_logits(logits, target)
+    if edge_weight > 0:
+        size = 2 * edge_px + 1
+        band = F.max_pool2d(target, size, 1, edge_px) + F.max_pool2d(1 - target, size, 1, edge_px) - 1  # grown - shrunk
+        w = 1 + edge_weight * band
+        bce = (F.binary_cross_entropy_with_logits(logits, target, reduction="none") * w).sum() / w.sum()
+    else:
+        bce = F.binary_cross_entropy_with_logits(logits, target)
     p = torch.sigmoid(logits).flatten(1)
     t = target.flatten(1)
     dice = (2 * (p * t).sum(1) + 1) / (p.sum(1) + t.sum(1) + 1)

@@ -161,6 +161,7 @@ def train_fold(k, cfg, splits, data_root, device, smoke, out, wb):
     amp = tr["amp"] and device.type == "cuda"
     scaler = torch.amp.GradScaler("cuda", enabled=amp)
     alpha, eps = nsl["alpha"], nsl["eps_255"] / 255
+    loss_kw = cfg.get("loss", {})  # edge_weight, edge_px; empty for the plain loss
 
     hist = {"train_loss": [], "stop_dice": []}
     best, best_epoch, best_state, bad = -1.0, -1, None, 0
@@ -176,11 +177,11 @@ def train_fold(k, cfg, splits, data_root, device, smoke, out, wb):
             if alpha > 0:
                 x.requires_grad_(True)
             with torch.autocast(device.type, dtype=torch.float16, enabled=amp):
-                loss = bce_dice(model(x), y)
+                loss = bce_dice(model(x), y, **loss_kw)
             if alpha > 0:
                 x_adv = adversarial_neighbour(x, loss, eps, scaler)
                 with torch.autocast(device.type, dtype=torch.float16, enabled=amp):
-                    loss = loss + alpha * bce_dice(model(x_adv), y)
+                    loss = loss + alpha * bce_dice(model(x_adv), y, **loss_kw)
             scaler.scale(loss / accum).backward()
             if (step + 1) % accum == 0:
                 scaler.step(opt)
