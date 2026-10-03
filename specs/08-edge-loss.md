@@ -1,6 +1,6 @@
 # 08: Edge-weighted loss on C*
 
-Status: draft 2026-10-03. Launches after spec 07's edge diagnostic is read.
+Status: approved 2026-10-03, running. Spec 07 found 83% of the wrong pixels within 2 pixels of a nucleus boundary.
 
 ## Question
 
