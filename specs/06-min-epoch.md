@@ -1,6 +1,6 @@
 # 06: No early stop before epoch 30, with and without strong augmentation
 
-Status: approved 2026-10-02, running.
+Status: done 2026-10-03. No win for either arm: C* +0.10 points against C, F* −0.05 against C*. C* is the new baseline (see Outcome).
 
 ## Question
 
@@ -38,3 +38,55 @@ If either arm's TTA Dice reaches 0.937, we ask whether to score the locked test 
 ## Budget
 
 C ran 0.51 minutes per epoch and F 0.54. Each fold now runs 40 to 60 epochs, so C* should take 1.7 to 2.6 hours and F* 1.8 to 2.7 hours, about 4 to 5 GPU-hours together. The two kernels run in parallel. If fold 0 of either arm takes more than 40 minutes, we stop and ask.
+
+## Outcome
+
+| Arm | Run | CV Dice | Dice with TTA | IoU | Pooled Dice | FGSM Dice | Epochs per fold | Minutes |
+|---|---|---|---|---|---|---|---|---|
+| C | 20260925-b3fe577-s02-hires | 0.9196 ± 0.0088 | 0.9211 | 0.8588 | 0.9378 | 0.818 | 48/27/36/47/39 | 100 |
+| F | 20260928-a6250b2-s04-hires-aug | 0.9213 ± 0.0059 | 0.9227 | 0.8608 | 0.9387 | 0.833 | 60/53/34/34/46 | 123 |
+| C* | 20261002-fa7e63a-s06-hires-min30 | 0.9207 ± 0.0081 | 0.9219 | 0.8611 | 0.9390 | 0.812 | 43/60/60/49/52 | 131 |
+| F* | 20261002-fa7e63a-s06-hires-aug-min30 | 0.9201 ± 0.0065 | 0.9214 | 0.8594 | 0.9383 | 0.832 | 52/44/60/54/46 | 129 |
+
+Per fold:
+
+| Arm | Fold 0 | Fold 1 | Fold 2 | Fold 3 | Fold 4 |
+|---|---|---|---|---|---|
+| C | 0.9202 | 0.9146 | 0.9219 | 0.9325 | 0.9090 |
+| F | 0.9204 | 0.9177 | 0.9201 | 0.9314 | 0.9167 |
+| C* | 0.9188 | 0.9197 | 0.9233 | 0.9320 | 0.9095 |
+| F* | 0.9156 | 0.9164 | 0.9229 | 0.9303 | 0.9155 |
+
+- **C* against C:** +0.10 points, ahead on 3 of 5 folds (−0.14, +0.50, +0.14, −0.05, +0.06). No win. The mean is
+  not below C's, so C* is the baseline from here. The gain is fold 1, which trained to epoch 60 instead of 27.
+- **F* against C*:** −0.05 points, ahead on 1 of 5 folds (−0.32, −0.32, −0.04, −0.17, +0.60). No win.
+- **F* against F:** −0.11 points. With training length fixed, the strong augmentation adds nothing to Dice. F's
+  +0.16 in spec 04 came from noise and from its fold 1 training longer, not from the augmentation.
+
+All four arms sit within 0.17 points, inside the run-to-run noise of about 0.3. Neither TTA Dice reaches 0.937,
+so the locked test set stays untouched.
+
+Dice by image type:
+
+| Type | Images | C | F | C* | F* |
+|---|---|---|---|---|---|
+| Fluorescence, small | 434 | 0.921 | 0.924 | 0.921 | 0.921 |
+| Fluorescence, large | 112 | 0.946 | 0.947 | 0.947 | 0.946 |
+| H&E, colour | 108 | 0.889 | 0.889 | 0.895 | 0.892 |
+| Brightfield, grayscale | 16 | 0.893 | 0.901 | 0.908 | 0.908 |
+
+Longer training helped the two weak types a little: H&E +0.6 points and brightfield +1.4 (16 images, so noisy).
+That matches the brightfield gain the 2× scale gave in specs 02 and 05, at a third of the cost.
+
+The minimum epoch did its job: no fold stopped before epoch 43. But the stop set is still a weak guide. In C*'s
+fold 1 the stop-set Dice fell from about 0.925 to 0.895 near epoch 23 and stayed there to epoch 60, while that
+fold's validation Dice rose 0.50 against C. Spec 05's arm G showed the same drop on the same fold. With 49 images,
+one or two images that flip are enough to move the stop-set mean by 3 points. This also explains why C's fold 1 stopped at 27.
+
+The augmentation still helps under attack (FGSM Dice 0.832 against 0.812), as in spec 04.
+
+Fold 0 took 24 minutes in C* and 29 in F*, inside the 40-minute limit. C* took 131 minutes, 1.3 times C.
+
+Verdict: C* is the baseline. Strong augmentation is closed for the Dice target. Training-recipe changes (NSL,
+2× scale, augmentation, training length) have all landed between 0.919 and 0.921, so the remaining 1.5 points
+need a different kind of change.

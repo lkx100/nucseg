@@ -105,3 +105,16 @@ points: its stop-set Dice peaked at epoch 3, during warm-up, and training stoppe
 0.33 on average. G kept most of D's brightfield and H&E gains but not C's small-fluorescence gain. It took 343
 minutes (3.4 times C) and peaked at 15.2 GB, close to the T4's limit. Early stopping cut a fold short in 4 of the 6 runs
 since spec 02 began, so fixing it comes next.
+
+## 2026-10-03: spec 06 arm C* (C + minimum epoch 30), run 20261002-fa7e63a-s06-hires-min30
+CV Dice 0.9207 (0.9219 with TTA), +0.10 points against C and ahead on 3 of 5 folds. That is no win, but it is not
+below C, so C* is the baseline from here. No fold stopped early: they ran 43 to 60 epochs. Fold 1 trained to
+epoch 60 instead of 27 and gained 0.50. H&E rose from 0.889 to 0.895 and brightfield (16 images) from 0.893 to 0.908.
+In fold 1 the stop-set Dice fell 3 points near epoch 23 and stayed there, while the fold's validation Dice rose.
+So the 49-image stop set is a weak guide for picking the epoch. It took 131 minutes, 1.3 times C.
+
+## 2026-10-03: spec 06 arm F* (F + minimum epoch 30), run 20261002-fa7e63a-s06-hires-aug-min30
+CV Dice 0.9201 (0.9214 with TTA), 0.05 points below C* and ahead on 1 of 5 folds, so no win. It is also 0.11
+below F. With training length fixed, the strong augmentation adds nothing to Dice; F's +0.16 in spec 04 was noise
+and longer training. It still helps under attack (FGSM Dice 0.832 against 0.812). C, F, C* and F* all sit within
+0.17 points, inside the run-to-run noise of about 0.3. Still 1.5 points short of 0.937 (best TTA stays F's 0.9227).

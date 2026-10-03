@@ -31,6 +31,8 @@ LABELS = {  # slug -> short name for plots
     "s03-hires-nsl1": "03 E\nC + NSL 1/255",
     "s04-hires-aug": "04 F\nC + strong aug",
     "s05-hires-scale2": "05 G\nC + 2× scale",
+    "s06-hires-min30": "06 C*\nC + min epoch",
+    "s06-hires-aug-min30": "06 F*\nF + min epoch",
 }
 TYPES = {  # image_type key -> plain name
     "dark-gray/small": "Fluorescence, small",
@@ -54,7 +56,7 @@ def load_runs():
 
 def progress(runs):
     best = max(runs, key=lambda r: r["m"]["cv"].get("tta", r["m"]["cv"])["dice"])
-    fig, ax = plt.subplots(figsize=(11, 5))
+    fig, ax = plt.subplots(figsize=(13, 5))
     x = np.arange(len(runs))
     for i, r in enumerate(runs):
         cv = r["m"]["cv"]
@@ -87,7 +89,7 @@ def progress(runs):
 
 def folds(runs):
     fig, ax = plt.subplots(figsize=(9, 4.5))
-    shown = {"s02-base": GRAY, "s02-hires": GOLD, "s04-hires-aug": GREEN, "s05-hires-scale2": BLUE}
+    shown = {"s02-hires": GRAY, "s04-hires-aug": GREEN, "s06-hires-min30": GOLD, "s06-hires-aug-min30": BLUE}
     for r in [r for r in runs if r["slug"] in shown]:
         c = shown[r["slug"]]
         f = r["m"]["folds"]
@@ -110,10 +112,10 @@ def by_type(runs, splits):
     counts = {t: 0 for t in TYPES}
     for t in splits["image_type"].values():
         counts[t] += 1
-    shown = [r for r in runs if r["slug"] in ("s02-hires", "s02-scale2", "s04-hires-aug", "s05-hires-scale2")]
+    shown = [r for r in runs if r["slug"] in ("s02-hires", "s05-hires-scale2", "s06-hires-min30", "s06-hires-aug-min30")]
     fig, ax = plt.subplots(figsize=(9, 4.5))
     w = 0.2
-    for j, (r, c) in enumerate(zip(shown, (GOLD, GRAY, GREEN, BLUE))):
+    for j, (r, c) in enumerate(zip(shown, (GRAY, BLUE, GOLD, GREEN))):
         vals = [r["m"]["dice_by_type"][t] for t in TYPES]
         bars = ax.bar(np.arange(len(TYPES)) + (j - 1.5) * w, vals, w, color=c, label=r["label"].replace("\n", ": "))
         for b, v in zip(bars, vals):
@@ -132,7 +134,7 @@ def cost(runs):
     fig, (a1, a2) = plt.subplots(1, 2, figsize=(11, 4.2))
     for r in runs:
         m = r["m"]
-        a1.scatter(m["minutes"], m["cv"]["dice"], s=m["peak_vram_gb"] * 25, color=GOLD if r["slug"] == "s02-hires" else BLUE,
+        a1.scatter(m["minutes"], m["cv"]["dice"], s=m["peak_vram_gb"] * 25, color=GOLD if r["slug"] == "s06-hires-min30" else BLUE,
                    alpha=0.8)
         a1.annotate(r["label"].replace("\n", ": "), (m["minutes"], m["cv"]["dice"]), textcoords="offset points",
                     xytext=(8, -3), fontsize=8)
