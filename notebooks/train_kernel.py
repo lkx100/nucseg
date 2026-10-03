@@ -1,8 +1,9 @@
 # %% [markdown]
 # # Training kernel
 #
-# Generic Kaggle runner for `nucseg.train`. Don't run it by hand. `launch/kaggle/push.sh` (with `CONFIG=` set)
-# prepends a cell that defines `RUN_ID`, `CONFIG`, `COMMIT` and unpacks the committed code into `CODE`.
+# Generic Kaggle runner for `nucseg.train` (or another entry point, with `MODULE=`). Don't run it by hand.
+# `launch/kaggle/push.sh` (with `CONFIG=` set) prepends a cell that defines `RUN_ID`, `CONFIG`, `COMMIT` and
+# `MODULE`, and unpacks the committed code into `CODE`.
 # Everything the job writes goes to `/kaggle/working/`, which `launch/kaggle/pull.sh` downloads.
 
 # %%
@@ -25,8 +26,8 @@ print("timm", pins["timm"], "(image had", have, ")")
 # %%
 env = dict(os.environ, WANDB_MODE="offline", WANDB_DIR="/kaggle/working", PYTHONPATH=str(CODE / "src"),
            NUCSEG_COMMIT=COMMIT)
-cmd = [sys.executable, "-m", "nucseg.train", "--config", CONFIG, "--run-id", RUN_ID, "--out", "/kaggle/working"]
+cmd = [sys.executable, "-m", MODULE, "--config", CONFIG, "--run-id", RUN_ID, "--out", "/kaggle/working"]
 proc = subprocess.Popen(cmd, cwd=CODE, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 for line in proc.stdout:
     print(line, end="")
-assert proc.wait() == 0, f"training failed with exit code {proc.returncode}"
+assert proc.wait() == 0, f"{MODULE} failed with exit code {proc.returncode}"

@@ -40,6 +40,15 @@ def git(*args):
         return None
 
 
+def mark_smoke_ok(commit):
+    """Smoke gate: launch/kaggle/push.sh only launches commits with a passing smoke run on a clean tree."""
+    if git("status", "--porcelain") == "":
+        marker = ROOT / "runs" / ".smoke-ok" / commit
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.touch()
+        log.info(f"smoke passed on clean commit {commit[:7]}")
+
+
 def setup_logging(out):
     log.setLevel(logging.INFO)
     fmt = logging.Formatter("%(asctime)s %(message)s", "%H:%M:%S")
@@ -297,12 +306,8 @@ def main():
         wb.log({"curves": __import__("wandb").Image(str(out / "plots" / "curves.png"))})
         wb.finish()
 
-    # Smoke gate: launch/kaggle/push.sh only launches commits with a passing smoke run on a clean tree.
-    if args.smoke and git("status", "--porcelain") == "":
-        marker = ROOT / "runs" / ".smoke-ok" / commit
-        marker.parent.mkdir(parents=True, exist_ok=True)
-        marker.touch()
-        log.info(f"smoke passed on clean commit {commit[:7]}")
+    if args.smoke:
+        mark_smoke_ok(commit)
 
 
 if __name__ == "__main__":

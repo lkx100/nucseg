@@ -1,0 +1,9 @@
+# Spec 07, arm H2: average the predictions of C* and F*, fold by fold. No training.
+members:               # kernel slug whose output holds ckpt/fold<k>.pt, and the config that built its model
+  - {name: "C*", slug: s06-hires-min30, config: configs/06-hires-min30.yaml}
+  - {name: "F*", slug: s06-hires-aug-min30, config: configs/06-hires-aug-min30.yaml}
+folds: [0, 1, 2, 3, 4]
+eval:
+  tile: 256
+  overlap: 0.5
+  tta: true            # also score with 8-orientation TTA in every member before averaging

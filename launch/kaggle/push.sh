@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Push a jupytext notebook to Kaggle as a kernel.
 #   launch/kaggle/push.sh notebooks/00_kaggle_env_probe.py env-probe
-# Env vars: GPU=1 (accelerator on), DATASETS="owner/slug,owner/slug2", TITLE="..."
+# Env vars: GPU=1 (accelerator on), DATASETS="owner/slug,owner/slug2", TITLE="...",
+#   KERNELS="owner/slug,..." (other kernels whose outputs are mounted under /kaggle/input),
+#   MODULE=nucseg.ensemble (entry point for CONFIG runs; default nucseg.train)
 #
 # Training runs set CONFIG=configs/X.yaml and use notebooks/train_kernel.py. Then the push refuses
 # unless the tree is clean and `--smoke` passed on HEAD (marker in runs/.smoke-ok/). The committed
@@ -33,14 +35,15 @@ fi
 jupytext --to ipynb "$nb" -o "$stage/$slug.ipynb" >/dev/null
 # jupytext writes no kernelspec, and Kaggle rejects a notebook without one.
 # Training runs also get a first cell that defines the run and unpacks the code bundle.
-python3 - "$stage/$slug.ipynb" "$run_id" "${CONFIG:-}" "${commit:-}" "$stage.b64" <<'PATCH'
+python3 - "$stage/$slug.ipynb" "$run_id" "${CONFIG:-}" "${commit:-}" "$stage.b64" "${MODULE:-nucseg.train}" <<'PATCH'
 import json, sys
 from pathlib import Path
-p, run_id, config, commit, bundle = sys.argv[1:]
+p, run_id, config, commit, bundle, module = sys.argv[1:]
 nb = json.load(open(p))
 nb["metadata"]["kernelspec"] = {"name": "python3", "display_name": "Python 3", "language": "python"}
 if run_id:
     src = (f"# Injected by launch/kaggle/push.sh\nRUN_ID = {run_id!r}\nCONFIG = {config!r}\nCOMMIT = {commit!r}\n"
+           f"MODULE = {module!r}\n"
            "import base64, io, tarfile\nfrom pathlib import Path\nCODE = Path('/tmp/nucseg-code')\n"
            f"BUNDLE = {Path(bundle).read_text()!r}\n"
            "tarfile.open(fileobj=io.BytesIO(base64.b64decode(BUNDLE)), mode='r:gz').extractall(CODE, filter='data')\n"
@@ -50,6 +53,7 @@ json.dump(nb, open(p, "w"))
 PATCH
 
 ds_json=$(python3 -c "import sys,json;print(json.dumps([d for d in sys.argv[1].split(',') if d]))" "${DATASETS:-}")
+ks_json=$(python3 -c "import sys,json;print(json.dumps([d for d in sys.argv[1].split(',') if d]))" "${KERNELS:-}")
 cat > "$stage/kernel-metadata.json" <<JSON
 {
   "id": "$user/$slug",
@@ -62,7 +66,7 @@ cat > "$stage/kernel-metadata.json" <<JSON
   "enable_internet": true,
   "dataset_sources": $ds_json,
   "competition_sources": [],
-  "kernel_sources": []
+  "kernel_sources": $ks_json
 }
 JSON
 

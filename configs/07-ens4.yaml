@@ -1,0 +1,11 @@
+# Spec 07, arm H4: arm H2 plus C and F. Differs from 07-ens2.yaml only in the last two members.
+members:               # kernel slug whose output holds ckpt/fold<k>.pt, and the config that built its model
+  - {name: "C*", slug: s06-hires-min30, config: configs/06-hires-min30.yaml}
+  - {name: "F*", slug: s06-hires-aug-min30, config: configs/06-hires-aug-min30.yaml}
+  - {name: "C", slug: s02-hires, config: configs/02-hires.yaml}
+  - {name: "F", slug: s04-hires-aug, config: configs/04-hires-aug.yaml}
+folds: [0, 1, 2, 3, 4]
+eval:
+  tile: 256
+  overlap: 0.5
+  tta: true            # also score with 8-orientation TTA in every member before averaging
