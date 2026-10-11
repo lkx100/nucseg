@@ -119,6 +119,8 @@ runs = []
 for row in csv.DictReader(open(ROOT / "results.tsv"), delimiter="\t"):
     m = json.loads((ROOT / "runs" / row["run_id"] / "metrics.json").read_text())
     slug = row["run_id"].split("-", 2)[2]
+    if slug not in IDEAS:  # scoring-only reruns of a model that is already listed
+        continue
     label, idea, verdict = IDEAS[slug]
     cv = m["cv"]
     runs.append(dict(slug=slug, label=label, idea=idea, verdict=verdict, plainCv=slug == "s09-plain-cv",

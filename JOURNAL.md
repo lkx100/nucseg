@@ -177,3 +177,14 @@ epochs for nothing and stopped at 41 to 47; the curves are flat from about epoch
 peak on a plateau. 132 minutes against the 160 to 190 estimate, fold 0 28.5 min against the 55-minute limit.
 Caveat the spec accepted: the validation fold both picked the epoch and gave the score, so J leans high.
 FGSM Dice rose to 0.832 from 0.812 on its own.
+
+## 2026-10-12: spec 10 arm K (J scored photo by photo), run 20261012-c4b6e50-s10-j-per-image
+No training; 6 minutes. It reproduces J exactly and saves all 602 masks, so the rest ran on this machine
+(`reports/photo_errors.py`). 89% of the wrong pixels are rings along outlines, 4% are missed nuclei and 7% invented
+blobs. The rings are one-sided: in 38 of the 46 photos below 0.85 the model draws every nucleus too wide (23) or too
+narrow (15), and over all photos it is too wide as often as too narrow. So the hand-drawn answers differ from photo
+to photo in how generously the nuclei are outlined, and the model draws a middle width. With the best grow or shrink
+of up to 2 pixels per photo, picked with the answer in hand, the mean is 93.41 and the highest fold 93.86, over both
+target rows; nearly all of it comes from small fluorescence photos (92.99 to 93.90). That is a ceiling, not a method.
+It explains why the edge-weighted loss of spec 08 changed nothing: the model is not unsure where the edge is, the
+answers disagree about it. Open: can the width be predicted from the photo? No GPU needed to check.

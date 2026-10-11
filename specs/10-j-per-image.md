@@ -1,6 +1,6 @@
 # 10: Where arm J still loses points, photo by photo
 
-Status: approved 2026-10-12, running.
+Status: done 2026-10-12. The gap sits in how wide the model draws the nuclei of a photo, mostly on small fluorescence photos (see Outcome).
 
 ## Question
 
@@ -45,4 +45,42 @@ One model over 602 photos, twice. H2 (two models, 603 photos) took 9 minutes, so
 
 ## Outcome
 
-Not run yet.
+Run `20261012-c4b6e50-s10-j-per-image`, 6 minutes. It reproduces J exactly: 92.59, 92.75 with TTA, highest fold 93.36. The numbers below come from `uv run python reports/photo_errors.py runs/20261012-c4b6e50-s10-j-per-image`, all with TTA.
+
+### Three kinds of wrong pixel
+
+89% of the wrong pixels are rings along outlines the model did find. 4% belong to nuclei it missed (813 of 25,983) and 7% to blobs it invented (1,000).
+
+| | Mean of five folds | Highest fold |
+|---|---|---|
+| Target | 92.81 | 93.68 |
+| J as it is | 92.75 | 93.36 |
+| Missed and invented nuclei repaired, rings left | 93.76 | 94.12 |
+| Rings repaired, missed and invented left | 98.96 | 99.28 |
+
+By the rule set above, fold 3 with its nuclei repaired reaches 93.68, so the first branch applies on paper. The rule was too coarse, though. Repairing every missed and invented nucleus in fold 3 gives 0.75 points and we need 0.32, so 43% of them would have to go. The rings cost 5.9 points in that fold, so 5% of them would do. Both routes are open, and the pictures point to the rings.
+
+### The rings are one-sided
+
+In the low photos the ring has one colour: the model draws every nucleus of the photo wider than the hand-drawn answer, or every one narrower.
+
+- Of the 46 photos below 0.85, 38 have three quarters or more of their wrong pixels on one side: 23 too wide, 15 too narrow.
+- Over all 602 photos it is 208: 112 too wide, 96 too narrow. On average the model is neither. The answers differ from photo to photo in how generously the nuclei were outlined, and the model draws a middle width.
+- A ceiling: grow or shrink each photo's whole mask by the best of −2 to 2 pixels, chosen with the answer in hand. 104 photos want a change. The mean rises to 93.41 and the highest fold to 93.86, both over the target. This is not a method, because it reads the answer. It says how much the right width per photo is worth: 0.66 points on the mean, 0.50 on the best fold.
+- Almost all of that is in the small fluorescence photos (390 of 602): 92.99 as it is, 93.90 at the best width. H&E gains 0.16 and stays the lowest type at 89.85.
+
+| Fold | As it is | Best width per photo | Nuclei repaired |
+|---|---|---|---|
+| 0 | 92.81 | 93.52 | 93.91 |
+| 1 | 92.12 | 92.84 | 93.49 |
+| 2 | 92.58 | 93.38 | 93.35 |
+| 3 | 93.36 | 93.86 | 94.12 |
+| 4 | 92.89 | 93.48 | 93.93 |
+
+Picture sheets: `reports/6-lowest-photos-best-fold.png` and `reports/6-lowest-photos-all.png`.
+
+### What it does not tell us
+
+Whether the width can be predicted. If photos with wide answers look different from photos with narrow ones (brightness, blur, nucleus size, source batch), a model can learn it. If look-alike photos carry different widths, no model can, and the last half point is the people who drew the outlines. That check needs no GPU: compare each photo's best width with what the photo looks like and with its neighbours in the training folds.
+
+Verdict: a diagnostic, so no win or loss. J stays the baseline. The next spec starts from the width question.

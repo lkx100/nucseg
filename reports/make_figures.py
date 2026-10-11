@@ -23,6 +23,7 @@ from nucseg.data import find_data_root, load_samples, load_splits  # noqa: E402
 OUT = ROOT / "reports"
 TARGET = 0.9368       # the paper's highest fold, the row the project is aimed at
 TARGET_MEAN = 0.9281  # the paper's mean of five folds
+RESCORES = ("s10-j-per-image",)  # scoring-only reruns of a model already in the charts
 PLAIN_CV = ("s09-plain-cv",)  # plain 5-fold CV, no stop set, bad label out; not comparable with the runs before it
 LABELS = {  # slug -> short name for plots
     "s01-base": "01 A\nbaseline",
@@ -55,8 +56,10 @@ plt.rcParams.update({"font.size": 10, "axes.spines.top": False, "axes.spines.rig
 def load_runs():
     runs = []
     for row in csv.DictReader(open(ROOT / "results.tsv"), delimiter="\t"):
-        m = json.loads((ROOT / "runs" / row["run_id"] / "metrics.json").read_text())
         slug = row["run_id"].split("-", 2)[2]
+        if slug in RESCORES:
+            continue
+        m = json.loads((ROOT / "runs" / row["run_id"] / "metrics.json").read_text())
         runs.append(dict(row=row, m=m, slug=slug, label=LABELS.get(slug, slug)))
     return sorted(runs, key=lambda r: r["label"])
 
