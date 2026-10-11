@@ -1,0 +1,12 @@
+# Spec 10: score arm J image by image and save its masks. No training. One member, so nothing is averaged.
+members:               # kernel slug whose output holds ckpt/fold<k>.pt, and the config that built its model
+  - {name: "J", slug: s09-plain-cv, config: configs/09-hires-plain-cv.yaml}
+folds: [0, 1, 2, 3, 4]
+data:
+  exclude:             # dropped from scoring, as in arm J
+    - 7b38c9173ebe69b4c6ba7e703c0c27f39305d9b2910f46405993d2ea7a963b80
+eval:
+  tile: 256
+  overlap: 0.5
+  tta: true            # also score with 8-orientation TTA
+  save_masks: true     # write the TTA mask of every image to masks/<id>.png

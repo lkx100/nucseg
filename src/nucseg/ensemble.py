@@ -4,7 +4,10 @@
 
 Each member is a finished run whose output holds ckpt/fold<k>.pt. For fold k every member's fold-k model predicts
 the fold's validation images, and the members' probabilities are averaged before the 0.5 threshold. Writes
-metrics.json, summary.txt, per_image.json, train.log and config.yaml into the output directory.
+metrics.json, summary.txt, per_image.json, train.log and config.yaml into the output directory. `data.exclude`
+drops image ids from scoring, as in training. With `eval.save_masks` the scored mask of every image (with TTA
+if it is on) is written to masks/<id>.png. One member is allowed: then nothing is averaged and the run only
+re-scores that model image by image.
 """
 import argparse
 import json
@@ -24,6 +27,8 @@ from nucseg.data import ROOT, find_data_root, fold_ids, load_samples, load_split
 from nucseg.foldtable import fold_table
 from nucseg.model import build_model
 from nucseg.predict import predict
+from PIL import Image
+
 from nucseg.train import SMOKE_LIMITS, WANDB_ENTITY, WANDB_PROJECT, git, log, mark_smoke_ok, setup_logging
 from eval.metrics import binarize, cv_summary, fold_summary, image_scores  # noqa: E402 (path set by nucseg.data)
 
@@ -60,10 +65,10 @@ def edge_stats(pred, gt):
             "dice_off_edge": image_scores(pred & ~band, gt & ~band)["dice"]}
 
 
-def run_fold(k, cfg, members, ckpt_dirs, splits, data_root, device, amp, smoke):
+def run_fold(k, cfg, members, ckpt_dirs, splits, data_root, device, amp, smoke, out):
     ev = cfg["eval"]
     t0 = time.time()
-    val_ids = fold_ids(splits, k)[2]
+    val_ids = fold_ids(splits, k, cfg.get("data", {}).get("exclude", ()))[2]
     if smoke:
         val_ids = val_ids[:SMOKE_LIMITS["val"]]
     val_s = load_samples(data_root, val_ids)
@@ -85,6 +90,10 @@ def run_fold(k, cfg, members, ckpt_dirs, splits, data_root, device, amp, smoke):
     scores = {tta: [{"id": i, **image_scores(binarize(mean[tta][i]), gt)} for i, (_, gt) in val_s.items()]
               for tta in modes}
     edge = [edge_stats(binarize(mean[False][i]), gt) for i, (_, gt) in val_s.items()]
+    if ev.get("save_masks"):
+        (out / "masks").mkdir(exist_ok=True)
+        for i, probs in mean[modes[-1]].items():
+            Image.fromarray(binarize(probs).astype(np.uint8) * 255).save(out / "masks" / f"{i}.png", optimize=True)
     fold = {"fold": k, **fold_summary(scores[False]), "members": solo,
             "dice_off_edge": float(np.mean([e["dice_off_edge"] for e in edge])),
             "err": sum(e["err"] for e in edge), "err_edge": sum(e["err_edge"] for e in edge)}
@@ -141,7 +150,7 @@ def main():
     t0 = time.time()
     folds, per_image, by_type, by_type_tta, off_edge = [], [], defaultdict(list), defaultdict(list), defaultdict(list)
     for k in cfg["folds"]:
-        fold, scores, edge = run_fold(k, cfg, members, ckpt_dirs, splits, data_root, device, amp, args.smoke)
+        fold, scores, edge = run_fold(k, cfg, members, ckpt_dirs, splits, data_root, device, amp, args.smoke, out)
         folds.append(fold)
         tta = {s["id"]: s["dice"] for s in scores.get(True, [])}
         for s, e in zip(scores[False], edge):
