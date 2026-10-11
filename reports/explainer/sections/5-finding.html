@@ -1,0 +1,364 @@
+<section class="chapter" id="finding" data-nav="The finding">
+  <p class="kicker">Part 5</p>
+  <h2>Where the missing points are</h2>
+  <p class="lead">So far we looked at one number per run. This part opens that number up into the 603 photo scores behind it. All numbers here come from our best result, the average of four models.</p>
+
+  <div class="scene" id="finding-a">
+    <div class="stage"><svg viewBox="0 0 800 420" role="img" aria-label="Unit chart: one small square for each of the 603 photos, placed by its score"></svg></div>
+    <ol class="captions">
+      <li>Each square is one photo, placed by its score. There are 603 of them, the worst on the left and the best on the right.</li>
+      <li>The photo in the middle, the median, scores 0.938. Half of all photos score higher. The target is 0.937. So the typical photo is already there.</li>
+      <li>But a run is graded by its average, and the average is 0.9235. A few very low scores pull it down, the way one zero pulls down a class average.</li>
+      <li>47 photos score below 0.85. That is 8% of the photos. Together they cost 1.46 points, more than the whole 1.35-point gap to the target.</li>
+      <li>This is not bad luck on the day. When we average only two models instead of four, 44 of the same 47 photos are below 0.85 again. The model fails on particular photos.</li>
+      <li>Three squares sit far to the left, at 0.00, 0.01 and 0.36. The next picture is about them.</li>
+    </ol>
+  </div>
+
+  <h3>One wrong answer key</h3>
+
+  <div class="scene" id="finding-b">
+    <div class="stage">
+      <svg viewBox="0 0 800 410" role="img" aria-label="Three look-alike photos, their answer keys, and how a wrong answer key hurts the exam score"></svg>
+      <p class="note" id="finding-note1" hidden>We did not save the model's drawings for these photos. We know their size from the error counts: on photo A the wrong pixels cover 19% of the photo, and on photo B they cover as much as its whole answer key.</p>
+      <p class="note" id="finding-note2" hidden>Two photos out of 49 falling to zero would cost about 3.8 points, so the size fits. This link is my explanation, not something we measured. It would also explain why fold 1 stopped early in all three runs of experiment 02.</p>
+    </div>
+    <ol class="captions">
+      <li>Among the 603 photos we score, exactly three have this size and look. They are 347 pixels wide and 260 high, and show the same kind of bright nuclei on a dark background.</li>
+      <li>Here are their answer keys. Two are fine. The key of photo A is almost empty: 26 marked pixels on a photo full of nuclei. This answer key is wrong.</li>
+      <li>Fold 0's turn. Photo A is in the exam. The model learned from photos B and C, so it marks the nuclei. The empty key says there are none. Score: <b>0.000</b>.</li>
+      <li>Fold 4's turn. Now photos B and C are in the exam and photo A is in the training set. It is the only photo of this look the model studies, and its key says: nothing here.</li>
+      <li>So the model marks almost nothing on photo B and only a small part of the nuclei on photo C. Scores: <b>0.008</b> and <b>0.364</b>.</li>
+      <li>These three photos cost 0.40 points of the 1.35 we are missing. Without them the average would be 0.9275.</li>
+      <li>The same wrong key explains an old puzzle. Photos B and C also sit in the stop set of fold 1. In that round the model trains on the empty key. The chart shows our baseline run C*: fold 1's stop-set score settles about 3 points under the other folds.</li>
+    </ol>
+  </div>
+
+  <h3>The rest of the low group</h3>
+  <p>These are the 24 lowest-scoring photos, the three from above included. Hover over one, or tap it, to see its answer key. Many are very dark, so there is a switch to brighten them.</p>
+
+  <div class="widget" id="finding-c">
+    <label class="sw"><input type="checkbox"> Brighten the photos</label>
+    <div class="grid"></div>
+  </div>
+
+  <p>Of the 47 low photos, 32 are small fluorescence photos, 9 are stained tissue, 5 are large fluorescence photos and 1 is brightfield. Several are dark or out of focus. We have not yet looked at what the model drew on them, so we do not know why they fail.</p>
+
+  <p class="takeaway">The gap is not spread thinly over all photos. It sits in a small group. One cause is a single wrong answer key, and it reaches three photos and one stop set.</p>
+
+  <style>
+    #finding .sq { fill: var(--muted); transition: transform .9s ease, opacity .6s ease, fill .5s ease; }
+    #finding .sq.bad, #finding .bad-fill { fill: var(--bad); }
+    #finding .fade { transition: opacity .6s ease, transform .9s ease; }
+    #finding .mv { transition: transform .9s ease, opacity .6s ease; }
+    #finding text { font-size: 14px; }
+    #finding text.t2 { fill: var(--ink-2); }
+    #finding-a text, #finding text.halo { paint-order: stroke; stroke: var(--stage); stroke-width: 4px; stroke-linejoin: round; }
+    #finding text.big { font-size: 22px; }
+    #finding text.sm { font-size: 13px; }
+    #finding .frame { fill: none; stroke: var(--line); stroke-width: 2; vector-effect: non-scaling-stroke; transition: stroke .6s ease; }
+    #finding .box { stroke-width: 1.5; }
+    #finding .seg { transform-box: fill-box; transform-origin: 0 50%; transition: transform .9s ease; }
+    #finding .draw { fill: none; stroke: var(--line); }
+    #finding .line-in { transition: stroke-dashoffset 1.5s ease; }
+    #finding .stage .note { margin: 8px 6px 0; }
+    #finding .widget { margin: 26px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px 18px; }
+    #finding .sw { display: inline-flex; gap: 8px; align-items: center; margin-bottom: 12px; font-size: 15px; cursor: pointer; }
+    #finding .grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px 10px; }
+    #finding .tile { font: inherit; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; text-align: center; display: block; }
+    #finding .pic { position: relative; display: block; width: 100%; max-width: 120px; aspect-ratio: 1; margin: 0 auto; background: #000; border-radius: 4px; overflow: hidden; }
+    #finding .pic img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    #finding .pic .mk { opacity: 0; transition: opacity .35s ease; }
+    #finding .tile:hover .mk, #finding .tile:focus-visible .mk, #finding .tile.on .mk { opacity: 1; }
+    #finding .tile:focus-visible .pic { outline: 2px solid var(--ink); outline-offset: 2px; }
+    #finding .tile.fam .pic { outline: 2px solid var(--bad); outline-offset: 1px; }
+    #finding .widget.bright .pic .ph { filter: brightness(3); }
+    #finding .sc { display: block; font-size: 14px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    #finding .tag { display: inline-block; font-size: 13px; line-height: 1.3; padding: 0 7px; border-radius: 99px; background: var(--bad-soft); }
+    #finding .tile:not(.fam) .tag { visibility: hidden; }
+    @media (max-width: 560px) { #finding .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    @media (max-width: 400px) { #finding .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    @media (prefers-reduced-motion: reduce) { #finding * { transition: none !important; animation: none !important; } }
+  </style>
+
+  <script>
+  (() => {
+    const D = window.DATA, S = D.stats, X = window.X;
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const el = (tag, attrs, parent) => X.svg(tag, attrs, parent);
+    const text = (parent, str, x, y, cls = "", anchor = "start") => {
+      const t = el("text", { x, y, "text-anchor": anchor, class: cls }, parent);
+      t.textContent = str;
+      return t;
+    };
+    const move = (e, x, y, k = 1) => { e.style.transform = `translate(${x}px,${y}px)` + (k === 1 ? "" : ` scale(${k})`); };
+
+    // ---------------------------------------------------------------- scene A: the unit chart
+    function unitChart() {
+      const scene = document.getElementById("finding-a"), svg = scene.querySelector("svg");
+      const X0 = 50, X1 = 770, BASE = 330, BIN = 0.01, EPS = 1e-9;
+      const VIEW = { full: { lo: 0, hi: 1, sz: 3, pitch: 3.6 }, zoom: { lo: 0.8, hi: 1, sz: 7, pitch: 8 } };
+      const sx = (v, w) => X0 + (v - w.lo) / (w.hi - w.lo) * (X1 - X0);
+      const sorted = D.images.map(d => d.s).sort((a, b) => a - b), median = sorted[(sorted.length - 1) / 2];
+      const nLow = D.images.filter(d => d.s < S.low_cut).length;
+      const nOff = D.images.filter(d => d.s < VIEW.zoom.lo - EPS).length;
+
+      // Slot of every photo inside its 0.01-wide bin; the same photo gets one spot per view.
+      const fill = {};
+      const slot = D.images.map(d => { const b = Math.min(99, Math.floor(d.s / BIN + EPS)); fill[b] = (fill[b] || 0) + 1; return { b, k: fill[b] - 1 }; });
+      const spots = {};
+      for (const [name, w] of Object.entries(VIEW)) {
+        const bw = (X1 - X0) * BIN / (w.hi - w.lo), cols = Math.max(1, Math.floor(bw / w.pitch + 1e-6)), gap = (w.pitch - w.sz) / 2;
+        spots[name] = slot.map(({ b, k }) => ({
+          x: sx(b * BIN, w) + (bw - cols * w.pitch) / 2 + gap + (k % cols) * w.pitch,
+          y: BASE - 1 - (Math.floor(k / cols) + 1) * w.pitch + gap,
+        }));
+      }
+
+      // Grid lines and tick labels, one set per view.
+      const ticks = {};
+      for (const [name, vals] of [["full", [0, .2, .4, .6, .8, 1]], ["zoom", [.8, .85, .9, .95, 1]]]) {
+        const g = ticks[name] = el("g", { class: "fade" }, svg);
+        for (const v of vals) {
+          const x = sx(v, VIEW[name]);
+          el("line", { x1: x, x2: x, y1: 100, y2: BASE + 4, stroke: "var(--line)" }, g);
+          text(g, name === "full" ? String(v === 1 ? "1.0" : v) : v.toFixed(2), x, BASE + 22, "t2", "middle");
+        }
+      }
+      el("line", { x1: X0, x2: X1, y1: BASE, y2: BASE, stroke: "var(--ink-2)" }, svg);
+      text(svg, "Score of one photo", 410, 372, "t2", "middle");
+
+      const squares = D.images.map(() => el("rect", { class: "sq", width: 1, height: 1 }, svg));
+
+      // Reference lines. Each group is moved along x with a CSS transform.
+      const vline = (parent, y0, y1, stroke, width, dash) => el("line", { x1: 0, x2: 0, y1: y0, y2: y1, stroke, "stroke-width": width, "stroke-dasharray": dash || "" }, parent);
+      const target = el("g", { class: "mv" }, svg);
+      vline(target, 84, 380, "var(--bad)", 2, "6 4");
+      text(target, `Target ${S.target}`, 0, 398, "", "middle");
+      const med = el("g", { class: "mv" }, svg);
+      vline(med, 70, BASE, "var(--ink)", 1.5);
+      text(med, `Median ${S.median.toFixed(3)}`, 7, 62);
+      const avg = el("g", { class: "mv" }, svg);
+      vline(avg, 70, BASE, "var(--violet)", 2.5);
+      text(avg, `Average ${S.mean}`, -7, 62, "", "end");
+      const drag = el("g", { class: "fade" }, svg);
+      el("line", { y1: 84, y2: 84, stroke: "var(--ink-2)", "stroke-width": 1.5 }, drag);
+      el("polygon", { fill: "var(--ink-2)" }, drag);
+      const cut = el("g", { class: "fade" }, svg);
+      el("line", { x1: 0, x2: 0, y1: 242, y2: BASE, stroke: "var(--ink-2)", "stroke-dasharray": "2 3" }, cut);
+      text(cut, `${S.n_low} photos below ${S.low_cut}`, 0, 234, "", "middle");
+      const off = el("g", { class: "fade" }, svg);
+      el("polyline", { points: "60,388 53,394 60,400", fill: "none", stroke: "var(--ink-2)", "stroke-width": 2 }, off);
+      text(off, `${nOff} more photos score below 0.80, off the left edge`, 68, 399, "t2");
+
+      // Step 4: the same 47 photos again, as a strip of small squares (3 of 47 are not below the cut).
+      const two = el("g", { class: "fade" }, svg), stay = 44;
+      text(two, "The same 47 photos, with two models averaged:", 60, 112);
+      for (let n = 0; n < S.n_low; n++) {
+        const r = el("rect", { x: 60 + (n % 24) * 11, y: 124 + Math.floor(n / 24) * 11, width: 9, height: 9, fill: n < stay ? "var(--bad)" : "none", stroke: n < stay ? "none" : "var(--muted)", "stroke-width": 1.5, class: "fade" }, two);
+        r.style.transitionDelay = reduce ? "0s" : `${n * 14}ms`;
+      }
+      text(two, `${stay} stay below ${S.low_cut} (red), ${S.n_low - stay} do not (outline)`, 60, 166, "sm t2");
+
+      // Step 5: the three look-alike photos.
+      const rings = el("g", { class: "fade" }, svg), famIdx = D.images.flatMap((d, n) => d.fam ? [n] : []);
+      const LAB = [{ dx: -14, anchor: "end" }, { dx: 12, anchor: "start" }, { dx: 0, anchor: "middle" }];
+      famIdx.forEach((n, j) => {
+        const p = spots.full[n], cx = p.x + VIEW.full.sz / 2, cy = p.y + VIEW.full.sz / 2, L = LAB[j];
+        el("circle", { cx, cy, r: 5.5, fill: "none", stroke: "var(--ink)", "stroke-width": 1.5 }, rings);
+        el("line", { x1: cx, y1: cy - 7, x2: cx + L.dx * 0.8, y2: cy - 29, stroke: "var(--ink-2)" }, rings);
+        text(rings, D.images[n].s.toFixed(2), cx + L.dx, cy - 36, "", L.anchor);
+      });
+
+      function render(i) {
+        const zoom = i >= 1 && i <= 4, name = zoom ? "zoom" : "full", w = VIEW[name], on = (g, v) => { g.style.opacity = v ? 1 : 0; };
+        squares.forEach((r, n) => {
+          const p = spots[name][n], s = D.images[n].s;
+          move(r, p.x, p.y, w.sz);
+          r.style.opacity = zoom && s < w.lo - EPS ? 0 : 1;
+          r.classList.toggle("bad", i >= 3 && s < S.low_cut);
+        });
+        on(ticks.full, !zoom); on(ticks.zoom, zoom);
+        const xt = sx(S.target, w), xm = sx(median, w), xa = sx(S.mean, w);
+        move(target, xt, 0); on(target, i >= 1);
+        move(med, xm, 0); on(med, i >= 1 && i <= 4);
+        move(avg, i >= 2 ? xa : xm, 0); on(avg, i >= 2 && i <= 4);
+        const [ln, head] = drag.children;
+        ln.setAttribute("x1", xm - 4); ln.setAttribute("x2", xa + 6);
+        head.setAttribute("points", `${xa + 1},84 ${xa + 9},79 ${xa + 9},89`);
+        on(drag, i === 2);
+        move(cut, sx(S.low_cut, w), 0); on(cut, i === 3);
+        on(off, zoom); off.querySelector("polyline").style.stroke = i >= 3 ? "var(--bad)" : "var(--ink-2)";
+        on(two, i === 4);
+        on(rings, i === 5);
+      }
+      scene.addEventListener("step", e => render(e.detail.i));
+
+      const checks = { squares: squares.length === 603, low: nLow === 47, median: median.toFixed(3) === "0.938" };
+      scene.dataset.check = JSON.stringify(checks);
+      if (!Object.values(checks).every(Boolean)) console.error("finding-a check failed", checks);
+    }
+
+    // ---------------------------------------------------------------- scene B: the three look-alikes
+    function lookAlikes() {
+      const scene = document.getElementById("finding-b"), svg = scene.querySelector("svg");
+      const fam = D.family, NAME = ["A", "B", "C"];
+      const K = { big: 1, train: 80 / 230, exam: 92 / 230, small: 60 / 230 };
+      const TY = [114, 236], EY = [114, 236];   // training slots and exam rows
+      const fmt = v => v.toFixed(3);
+
+      const defs = el("defs", {}, svg);
+      const pat = el("pattern", { id: "finding-hatch", width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
+      el("line", { x1: 0, y1: 0, x2: 0, y2: 6, style: "stroke: var(--muted); stroke-width: 2" }, pat);
+
+      // Flow picture: three boxes and two arrows.
+      const flow = el("g", { class: "fade" }, svg);
+      const box = (x, w, fillC, strokeC, title, tx, anchor) => {
+        el("rect", { x, y: 56, width: w, height: 294, rx: 10, class: "box", style: `fill: var(--${fillC}); stroke: var(--${strokeC})` }, flow);
+        text(flow, title, tx, 84, "", anchor).style.fontSize = "16px";
+      };
+      box(15, 190, "blue-soft", "blue", "Training", 27, "start");
+      box(235, 120, "surface", "neutral", "Model", 295, "middle");
+      box(385, 405, "orange-soft", "orange", "Exam", 397, "start");
+      for (const x of [207, 357]) {
+        el("line", { x1: x, x2: x + 22, y1: 203, y2: 203, stroke: "var(--ink-2)", "stroke-width": 2 }, flow);
+        el("polygon", { points: `${x + 28},203 ${x + 20},198 ${x + 20},208`, fill: "var(--ink-2)" }, flow);
+      }
+      const m1 = text(flow, "", 295, 190, "t2 sm", "middle"), m2 = text(flow, "", 295, 208, "t2 sm", "middle");
+      const heads = el("g", { class: "fade" }, svg);
+      [["Photo", 441], ["Model's drawing", 543], ["Answer key", 645]].forEach(([t, x]) => text(heads, t, x, 106, "t2 sm", "middle"));
+      const emptyKey = text(svg, "Almost empty answer key", 25, TY[0] + 78, "sm t2");
+      emptyKey.classList.add("fade");
+
+      // Schematic placeholders for the model's drawing. These are not real model output.
+      const placeholder = (row, full, lines) => {
+        const g = el("g", { class: "fade", transform: `translate(497,${EY[row]})` }, svg);
+        el("rect", { width: 92, height: 69, class: "draw", "stroke-dasharray": "4 3" }, g);
+        el("rect", full ? { width: 92, height: 69, fill: "url(#finding-hatch)" } : { x: 38, y: 28, width: 16, height: 12, fill: "url(#finding-hatch)" }, g);
+        lines.forEach((t, j) => text(g, t, 46, 89 + j * 16, "t2 sm", "middle"));
+        return g;
+      };
+      const dA = placeholder(0, true, ["marks about", "19% of the photo"]);
+      const dB = placeholder(0, false, ["marks almost", "nothing"]), dC = placeholder(1, false, ["marks only a", "small part"]);
+      const scores = [0, 1].map(r => text(svg, "", 701, EY[r] + 54, "big", "start"));
+      scores.forEach(t => t.classList.add("fade"));
+
+      // The three photos, each with its answer key and a name tag. They fly between places.
+      const parts = fam.map((f, p) => {
+        const mk = (href, clipTop) => {
+          const g = el("g", { class: "mv" }, svg);
+          el("image", { href, width: 230, height: 172, preserveAspectRatio: "xMidYMid slice" }, g);
+          el("rect", { width: 230, height: 172, class: "frame" }, g);
+          return g;
+        };
+        return { ph: mk(f.img), mk: mk(f.mask), lb: text(svg, `Photo ${NAME[p]}`, 0, 0, "mv sm") };
+      });
+      parts.forEach(o => { o.lb.style.fontSize = "14px"; });
+
+      // The step 5 bar: the gap to the target, split in two.
+      const bar = el("g", { class: "fade" }, svg);
+      const GAP = 1.35, MINE = 0.40, REST = +(GAP - MINE).toFixed(2), BX = 60, PPP = 680 / GAP;
+      const seg = (x, w, cls, delay) => { const r = el("rect", { x, y: 150, width: w, height: 44, style: `fill: var(--${cls})`, class: "seg" }, bar); r.style.transitionDelay = delay; return r; };
+      const segs = [seg(BX, MINE * PPP, "bad", "0s"), seg(BX + MINE * PPP, REST * PPP, "neutral", ".4s")];
+      text(bar, `These 3 photos: ${MINE.toFixed(2)}`, BX + MINE * PPP / 2, 138, "", "middle");
+      text(bar, `Everything else: ${REST.toFixed(2)}`, BX + MINE * PPP + REST * PPP / 2, 138, "", "middle");
+      el("path", { d: `M${BX} 206 v8 H${BX + 680} v-8`, fill: "none", stroke: "var(--ink-2)" }, bar);
+      text(bar, `The gap to the target: ${GAP} points`, 400, 238, "", "middle");
+      text(bar, `Average now: ${S.mean}`, BX, 272, "t2", "start");
+      text(bar, `Target: ${S.target}`, BX + 680, 272, "t2", "end");
+
+      // The step 6 chart: stop-set score per epoch, one line per fold.
+      const chart = el("g", { class: "fade" }, svg), PX0 = 70, PX1 = 690, PY0 = 40, PY1 = 330;
+      const ex = e => PX0 + (e - 1) / 59 * (PX1 - PX0), ey = v => PY1 - (v - 0.86) / 0.08 * (PY1 - PY0);
+      el("clipPath", { id: "finding-clip" }, defs).appendChild(el("rect", { x: PX0 - 1, y: PY0 - 1, width: PX1 - PX0 + 2, height: PY1 - PY0 + 2 }));
+      [0.86, 0.88, 0.9, 0.92, 0.94].forEach(v => {
+        el("line", { x1: PX0, x2: PX1, y1: ey(v), y2: ey(v), stroke: "var(--line)" }, chart);
+        text(chart, v.toFixed(2), PX0 - 8, ey(v) + 5, "t2 sm", "end");
+      });
+      [1, 10, 20, 30, 40, 50, 60].forEach(e => text(chart, String(e), ex(e), PY1 + 22, "t2 sm", "middle"));
+      text(chart, "Epoch", (PX0 + PX1) / 2, PY1 + 46, "t2", "middle");
+      const yt = text(chart, "Score on the stop set", 0, 0, "t2", "middle");
+      yt.setAttribute("transform", "translate(16,185) rotate(-90)");
+      const lines = [];
+      const curve = (c, stroke, width) => {
+        const d = c.map((v, k) => `${k ? "L" : "M"}${ex(k + 1).toFixed(1)} ${ey(v).toFixed(1)}`).join("");
+        const p = el("path", { d, pathLength: 1, fill: "none", stroke, "stroke-width": width, "stroke-linejoin": "round", "clip-path": "url(#finding-clip)", class: "line-in" }, chart);
+        p.style.strokeDasharray = 1; lines.push(p);
+      };
+      D.stopCurves.forEach((c, f) => f !== 1 && curve(c, "var(--neutral)", 1.5));
+      curve(D.stopCurves[1], "var(--bad)", 2.5);
+      const last = f => D.stopCurves[f][D.stopCurves[f].length - 1];
+      text(chart, "Fold 1", PX1 + 8, ey(last(1)) + 5);
+      text(chart, "The other", PX1 + 8, ey(last(2)) - 4); text(chart, "four folds", PX1 + 8, ey(last(2)) + 12);
+      text(chart, "In the fold 1 round", 250, 232, "t2 sm halo");
+      text(chart, "Training", 250, 249, "t2 sm halo"); text(chart, "Stop set", 400, 249, "t2 sm halo");
+
+      const FRAME = { train: "--blue", exam: "--orange", stop: "--yellow", none: "--line" };
+      // Where every part sits at step i: ph (photo), mk (answer key), lb (name tag). op = opacity.
+      function poses(i) {
+        if (i <= 1) return fam.map((_, p) => {
+          const x = 25 + 260 * p;
+          return { ph: { x, y: 40, k: 1, op: 1, c: "none" }, mk: { x, y: i ? 222 : 40, k: 1, op: i, c: "none" }, lb: { x, y: 28, op: 1 } };
+        });
+        if (i === 5) return poses(4).map(o => { for (const q of ["ph", "mk", "lb"]) o[q].op = 0; return o; });
+        if (i === 6) return fam.map((_, p) => {
+          const x = [250, 400, 470][p], pos = { y: 256, k: K.small, c: p ? "stop" : "train" };
+          return { ph: { ...pos, x, op: 1 }, mk: { ...pos, x: p ? x : 316, op: p ? 0 : 1 }, lb: { x, y: 318, op: 1 } };
+        });
+        const where = i === 2 ? [["exam", 0], ["train", 0], ["train", 1]] : [["train", 0], ["exam", 0], ["exam", 1]];
+        return where.map(([kind, s]) => kind === "train"
+          ? { ph: { x: 25, y: TY[s], k: K.train, op: 1, c: "train" }, mk: { x: 115, y: TY[s], k: K.train, op: 1, c: "train" }, lb: { x: 25, y: TY[s] - 8, op: 1 } }
+          : { ph: { x: 395, y: EY[s], k: K.exam, op: 1, c: "exam" }, mk: { x: 599, y: EY[s], k: K.exam, op: 1, c: "exam" }, lb: { x: 701, y: EY[s] + 22, op: 1 } });
+      }
+
+      function render(i) {
+        const on = (e, v) => { e.style.opacity = v ? 1 : 0; };
+        poses(i).forEach((o, p) => {
+          for (const q of ["ph", "mk"]) {
+            const g = parts[p][q];
+            move(g, o[q].x, o[q].y, o[q].k); on(g, o[q].op);
+            g.querySelector(".frame").style.stroke = `var(${FRAME[o[q].c]})`;
+          }
+          move(parts[p].lb, o.lb.x, o.lb.y); on(parts[p].lb, o.lb.op);
+        });
+        const inFlow = i >= 2 && i <= 4;
+        on(flow, inFlow); on(heads, inFlow);
+        m1.textContent = "Trained on"; m2.textContent = i === 2 ? "photos B and C" : "photo A";
+        on(m1, inFlow); on(m2, inFlow);
+        on(emptyKey, i === 3 || i === 4);
+        on(dA, i === 2); on(dB, i === 4); on(dC, i === 4);
+        scores.forEach((t, r) => {
+          t.textContent = fmt(i === 2 ? fam[0].dice : fam[r + 1].dice);
+          on(t, i === 2 ? r === 0 : i === 4);
+        });
+        on(bar, i === 5);
+        segs.forEach(s => { s.style.transform = i === 5 ? "scaleX(1)" : "scaleX(0)"; });
+        on(chart, i === 6);
+        lines.forEach(p => { p.style.strokeDashoffset = i === 6 ? 0 : 1; });
+        document.getElementById("finding-note1").hidden = !inFlow;
+        document.getElementById("finding-note2").hidden = i !== 6;
+      }
+      scene.addEventListener("step", e => render(e.detail.i));
+    }
+
+    // ---------------------------------------------------------------- gallery: the 24 lowest photos
+    function gallery() {
+      const box = document.getElementById("finding-c"), grid = box.querySelector(".grid");
+      D.tail.forEach(t => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "tile" + (t.fam ? " fam" : "");
+        b.setAttribute("aria-label", `Photo with score ${t.s.toFixed(3)}. Show the answer key.`);
+        const tag = t.fam === D.family[0].id ? "wrong key" : "look-alike";
+        b.innerHTML = `<span class="pic"><img class="ph" src="${t.img}" alt=""><img class="mk" src="${t.mask}" alt="Answer key"></span>` +
+          `<span class="sc">${t.s.toFixed(3)}</span><span class="tag">${tag}</span>`;
+        b.onclick = () => { const was = b.classList.contains("on"); grid.querySelectorAll(".on").forEach(n => n.classList.remove("on")); b.classList.toggle("on", !was); };
+        grid.appendChild(b);
+      });
+      box.querySelector("input").onchange = e => box.classList.toggle("bright", e.target.checked);
+    }
+
+    unitChart(); lookAlikes(); gallery();
+  })();
+  </script>
+</section>

@@ -1,0 +1,245 @@
+<section class="chapter" id="experiments" data-nav="Experiments">
+  <p class="kicker">Part 4</p>
+  <h2>Eight experiments, one win</h2>
+  <p class="lead">Each experiment changes one thing and asks whether the score moves by more than luck. Step through them in the order we ran them.</p>
+
+  <div class="scene" id="experiments-a">
+    <div class="stage"><svg viewBox="0 0 800 470" role="img" aria-label="Dot chart of the cross-validation Dice score of all 13 runs in the order we ran them, with the luck band and the 0.937 target, and a small picture of the idea tried at each step."></svg></div>
+    <ol class="captions">
+      <li><b>Experiment 01, run A.</b> We start with the plain Swin-T U-Net from part 2, without the yellow branch. It scores 0.9178. This is the baseline.</li>
+      <li><b>Run B: adversarial training.</b> This is the idea behind NSL (neural structured learning). For every photo the model also trains on a copy with a tiny change, invisible to the eye, chosen to fool the model as much as possible. Score 0.9144, lower than the baseline on all 5 folds. It did make the model hard to fool: under such an attack its score stays at 0.918, where the baseline drops to 0.800. Training took 2.4 times as long.</li>
+      <li><b>Experiment 02 first reran the baseline</b> with nothing changed: 0.9143. The 0.35-point gap to the first run is our measure of luck, drawn as the shaded band.</li>
+      <li><b>Run C: the full-size branch.</b> This is the yellow branch from part 2. Score 0.9196, which is 0.53 points over the rerun and ahead on 4 of 5 folds. It passes the win rule. From here on, C is the model.</li>
+      <li><b>Runs D and G: enlarged photos.</b> We fed the model photos enlarged to twice the size, so each nucleus covers more grid cells. Without the yellow branch that gave 0.9190, with it 0.9196. No gain over C, at about 3 times the training time.</li>
+      <li><b>Run E: adversarial training again,</b> on top of C, with a change half as large. 0.9197. The model was again harder to fool (0.905 under attack against 0.818), and again the score did not move. We closed this idea for the Dice target.</li>
+      <li><b>Run F: altered copies.</b> The model trained on photos that were warped, recoloured, blurred and speckled with noise. 0.9213. That is less than 0.2 points over C, inside the luck band.</li>
+      <li><b>Experiment 06: train longer.</b> Training often stopped early, sometimes before epoch 30 of 60. We forbade stopping before epoch 30. C became C* at 0.9207, our baseline since then. F became F* at 0.9201. With training length equal, the altered copies added nothing.</li>
+      <li><b>Experiment 07: average finished models.</b> Nothing was trained. We averaged the answers of models we already had. Two models gave 0.9217. Four gave 0.9230. With the 8-orientation trick from part 3 that is 0.9235, our best score.</li>
+      <li><b>Experiment 08: make edges count more.</b> 83% of all wrong pixels lie within 2 pixels of a nucleus edge. So during training, mistakes near an edge counted 5 times as much. 0.9213. No gain.</li>
+      <li><b>Step back.</b> From run C on, eight single-model runs fit inside one luck band. Five different training ideas gave the same score. That tells us the limit is not in how we train. Part 5 looks at where it is.</li>
+    </ol>
+  </div>
+
+  <p class="takeaway">One change to the model worked. Changes to the training did not. That is why the next part stops looking at runs and starts looking at single photos.</p>
+
+  <style>
+    #experiments .dot { stroke: var(--stage); stroke-width: 1.5; transition: opacity .6s ease, transform .6s ease, fill .5s ease; }
+    #experiments .dot.hide { opacity: 0; transform: translateY(-22px); }
+    #experiments .dot.c-good { fill: var(--good); }
+    #experiments .dot.c-blue { fill: var(--blue); }
+    #experiments .dot.c-ink { fill: var(--ink-2); }
+    #experiments .dot.old { fill: var(--neutral); }
+    #experiments .fade { transition: opacity .6s ease; }
+    #experiments .halo { paint-order: stroke; stroke: var(--stage); stroke-width: 4px; stroke-linejoin: round; }
+    #experiments .t2 { fill: var(--ink-2); }
+    #experiments .pic { display: none; }
+    #experiments .pic.on { display: block; }
+    #experiments .go .draw { stroke-dasharray: 1; animation: ex-draw .9s ease both; animation-delay: var(--d, 0s); }
+    #experiments .go .pop { animation: ex-pop .5s ease both; animation-delay: var(--d, 0s); transform-box: fill-box; transform-origin: center; }
+    #experiments .go .grow { animation: ex-grow 1s ease both; transform-box: fill-box; transform-origin: 0 50%; }
+    #experiments .go .slide { animation: ex-slide 1.8s ease-in-out both; }
+    #experiments .go .rim { animation: ex-rim 1.1s ease both; }
+    #experiments .go .ghost { animation: ex-ghost 1.1s ease-in both; }
+    @keyframes ex-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+    @keyframes ex-pop { from { opacity: 0; transform: scale(.5); } to { opacity: 1; transform: none; } }
+    @keyframes ex-grow { from { transform: scale(.5); } to { transform: none; } }
+    @keyframes ex-slide { from { transform: translateX(-80px); } to { transform: none; } }
+    @keyframes ex-rim { from { stroke-width: 1px; } to { stroke-width: 8px; } }
+    @keyframes ex-ghost { from { opacity: .6; } to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(.5); } }
+    @media (prefers-reduced-motion: reduce) { #experiments * { animation: none !important; transition: none !important; } }
+  </style>
+  <script>
+  (() => {
+    const D = window.DATA, scene = document.getElementById("experiments-a"), svg = scene.querySelector("svg");
+    const S = (tag, attrs, parent) => X.svg(tag, attrs, parent);
+    const runs = D.runs, by = Object.fromEntries(runs.map(r => [r.label, r]));
+    const NAME = { "01 A": "baseline", "01 B": "adversarial", "02 A′": "rerun", "02 C": "full-size branch", "02 D": "2× photos",
+      "03 E": "C + adversarial", "04 F": "C + altered copies", "05 G": "C + 2× photos", "06 C*": "C + min 30 epochs",
+      "06 F*": "F + min 30 epochs", "07 H2": "2 averaged", "07 H4": "4 averaged", "08 I": "C* + edge weight" };
+    const INTRO = [["01 A"], ["01 B"], ["02 A′"], ["02 C"], ["02 D", "05 G"], ["03 E"], ["04 F"], ["06 C*", "06 F*"], ["07 H2", "07 H4"], ["08 I"], []];
+    const LAST = INTRO.length - 1;
+    const stepOf = {}; INTRO.forEach((ls, s) => ls.forEach(l => stepOf[l] = s));
+    const PIC = ["u", "adv", "rerun", "branch", "grow", "adv", "fan", "stop", "avg", "edge", null];
+    const COLOR = { "02 C": "c-good", "01 A": "c-blue", "02 A′": "c-blue", "06 C*": "c-blue" };
+
+    // ---- chart geometry
+    const PL = 52, PR = 790, PT = 30, PB = 225, V0 = 0.912, V1 = 0.938, CW = (PR - PL) / runs.length;
+    const Y = v => PB - (v - V0) / (V1 - V0) * (PB - PT), XC = k => PL + CW * (k + .5);
+    const first3 = runs.slice(0, 3).map(r => r.dice), lo1 = Math.min(...first3), hi1 = Math.max(...first3);
+    const lo2 = 0.9185, hi2 = lo2 + (hi1 - lo1);
+
+    const txt = (p, x, y, s, o = {}) => { const t = S("text", { x, y, "font-size": o.size || 13, "text-anchor": o.anchor || "start", class: o.cls || "" }, p); t.textContent = s; return t; };
+    S("defs", {}, svg).innerHTML = '<filter id="ex-blur"><feGaussianBlur stdDeviation="1.6"/></filter>';
+
+    const grid = S("g", {}, svg);
+    for (let v = 0.915; v < V1; v += 0.005) {
+      S("line", { x1: PL, x2: PR, y1: Y(v), y2: Y(v), stroke: "var(--line)" }, grid);
+      txt(grid, PL - 8, Y(v) + 4, v.toFixed(3), { anchor: "end", cls: "t2" });
+    }
+    S("line", { x1: PL, x2: PR, y1: PB, y2: PB, stroke: "var(--line)" }, grid);
+    txt(grid, 8, 16, "Score (CV Dice), higher is better", { cls: "t2" });
+    S("line", { x1: PL, x2: PR, y1: Y(0.937), y2: Y(0.937), stroke: "var(--bad)", "stroke-width": 1.5, "stroke-dasharray": "6 4" }, grid);
+    txt(grid, PR, Y(0.937) - 6, "Target 0.937", { anchor: "end", cls: "t2" });
+
+    const band = (lo, hi, x1, x2) => {
+      const g = S("g", { class: "fade", opacity: 0 }, svg);
+      S("rect", { x: x1, y: Y(hi), width: x2 - x1, height: Y(lo) - Y(hi), fill: "var(--violet)", opacity: .16, rx: 3 }, g);
+      return g;
+    };
+    const band1 = band(lo1, hi1, PL, PL + 3 * CW), band2 = band(lo2, hi2, PL + 3 * CW, PR);
+    txt(band1, PL + 3 * CW + 8, Y((lo1 + hi1) / 2) + 5, "Luck band: 0.35 points", { cls: "halo t2" });
+    txt(band2, PL + 3 * CW + 4, Y(hi2) - 8, "One luck band covers every single model since C", { cls: "halo t2" });
+
+    // x labels: the label, then the short name wrapped to about 9 characters per line
+    const wrap = (s, n = 8) => s.split(" ").reduce((ls, w) => { const l = ls[ls.length - 1]; if (l && (l + " " + w).length <= n) ls[ls.length - 1] = l + " " + w; else ls.push(w); return ls; }, []);
+    const xl = runs.map((r, k) => {
+      const t = S("text", { "font-size": 12, "text-anchor": "middle", class: "t2 fade" }, svg);
+      [r.label, ...wrap(NAME[r.label])].forEach((s, j) => { const ts = S("tspan", { x: XC(k), y: PB + 22 + j * 14 }, t); ts.textContent = s; if (j === 0) ts.setAttribute("style", "fill:var(--ink)"); });
+      return t;
+    });
+    const dots = runs.map((r, k) => S("circle", { cx: XC(k), cy: Y(r.dice), r: 7, class: "dot hide " + (COLOR[r.label] || "c-ink") }, svg));
+    const nums = runs.map((r, k) => { const t = txt(svg, XC(k), Y(r.dice) - 13, r.dice.toFixed(4), { anchor: "middle", cls: "halo fade" }); t.setAttribute("opacity", 0); t.style.fontWeight = 600; return t; });
+
+    // ---- idea card
+    const CY = 312;
+    S("rect", { x: 10, y: CY, width: 780, height: 146, rx: 12, fill: "none", stroke: "var(--line)" }, svg);
+    const picRoot = S("g", { transform: `translate(40 ${CY + 18})` }, svg);
+    const cardText = S("g", {}, svg);
+    const closing = txt(svg, 400, CY + 80, "One model change worked. The training changes did not.", { size: 20, anchor: "middle" });
+
+    // ---- pictograms, each in a 150 x 110 box
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const P = (key, build) => { const g = S("g", { class: "pic" }, picRoot); build(g); return [key, g]; };
+    const tile = (p, x, y, w, h, o = {}) => {
+      const g = S("g", {}, p); if (o.tf) g.setAttribute("transform", o.tf);
+      S("rect", { x, y, width: w, height: h, rx: 3, fill: `var(--${o.bg || "blue-soft"})`, stroke: "var(--line)" }, g);
+      if (!o.empty) {
+        const n = S("g", {}, g); if (o.blur) n.setAttribute("filter", "url(#ex-blur)");
+        [[.3, .42, .2], [.66, .6, .22], [.64, .22, .12]].forEach(([a, b, r]) =>
+          S("ellipse", { cx: x + a * w, cy: y + b * h, rx: r * w * .8, ry: r * h * .9, fill: `var(--${o.ink || "blue"})`, opacity: .85 }, n));
+      }
+      for (let i = 0; i < (o.speck || 0); i++) S("rect", { x: x + 1 + rnd() * (w - 3), y: y + 1 + rnd() * (h - 3), width: 1.6, height: 1.6, fill: "var(--ink-2)", opacity: .8 }, g);
+      return g;
+    };
+    const line = (p, d, col, w, extra = {}) => S("path", { d, fill: "none", stroke: `var(--${col})`, "stroke-width": w, "stroke-linecap": "round", "stroke-linejoin": "round", ...extra }, p);
+    const drawn = (p, d, col, w, delay) => line(p, d, col, w, { class: "draw", pathLength: 1, style: `--d:${delay}s` });
+    const uShape = (p, branch) => {
+      drawn(p, "M30 30 V70 Q30 98 75 98", "blue", 14, 0);
+      drawn(p, "M75 98 Q120 98 120 70 V30", "orange", 14, .45);
+      line(p, "M24 46 L30 54 L36 46", "stage", 3); line(p, "M114 58 L120 50 L126 58", "stage", 3);
+      if (branch) drawn(p, "M30 30 V10 H120 V30", "yellow", 8, .9);
+    };
+    const pops = (g, d) => g.setAttribute("style", `--d:${d}s`);
+    const ARROW = (p, x1, x2, y) => { line(p, `M${x1} ${y} H${x2}`, "ink-2", 2); line(p, `M${x2 - 5} ${y - 5} L${x2} ${y} L${x2 - 5} ${y + 5}`, "ink-2", 2); };
+
+    const pics = Object.fromEntries([
+      P("u", g => uShape(g, false)),
+      P("branch", g => uShape(g, true)),
+      P("rerun", g => {
+        S("line", { x1: 12, x2: 140, y1: 80, y2: 80, stroke: "var(--line)", "stroke-dasharray": "3 3" }, g);
+        line(g, "M69 40 H81 M69 48 H81", "ink-2", 2.5);
+        [6, 86].forEach((x, j) => {
+          const u = S("g", { transform: `translate(${x} 14) scale(.43)` }, g); uShape(u, false);
+          const d = S("circle", { cx: x + 31, cy: 80 + j * 6, r: 5, fill: "var(--ink-2)", class: "pop" }, g); pops(d, 1 + j * .3);
+        });
+      }),
+      P("adv", g => {
+        const a = S("g", { class: "pop" }, g); tile(a, 2, 18, 34, 34);
+        txt(g, 48, 41, "+", { size: 20, anchor: "middle" });
+        const b = S("g", { class: "pop" }, g); pops(b, .3); tile(b, 60, 18, 34, 34, { empty: true, bg: "stage", speck: 70 });
+        txt(g, 106, 41, "=", { size: 20, anchor: "middle" });
+        const c = S("g", { class: "pop" }, g); pops(c, .6); tile(c, 116, 18, 34, 34);
+        const m = S("g", { class: "pop" }, g); pops(m, 1.1);
+        S("ellipse", { cx: 133, cy: 82, rx: 15, ry: 11, fill: "var(--orange-soft)", stroke: "var(--orange)" }, m);
+        line(m, "M124 74 L142 90 M142 74 L124 90", "bad", 3.5);
+      }),
+      P("grow", g => {
+        tile(g, 8, 52, 36, 36); ARROW(g, 50, 68, 70);
+        const b = S("g", { class: "grow" }, g); tile(b, 74, 16, 72, 72);
+        txt(g, 110, 106, "2×", { anchor: "middle" });
+      }),
+      P("fan", g => {
+        tile(g, 4, 34, 40, 40);
+        const ys = [4, 30, 56, 82], opts = [{ tf: "rotate(-9 120 15)" }, { bg: "orange-soft", ink: "orange" }, { blur: 1 }, { speck: 30 }];
+        ys.forEach((y, j) => {
+          drawn(g, `M46 54 C70 54 70 ${y + 11} 96 ${y + 11}`, "ink-2", 1.6, j * .15);
+          const t = S("g", { class: "pop" }, g); pops(t, .5 + j * .2); tile(t, 100, y, 42, 22, opts[j]);
+        });
+      }),
+      P("stop", g => {
+        line(g, "M12 6 V92 H142", "ink-2", 1.5);
+        line(g, "M14 88 C30 52 45 32 70 26 S118 18 140 15", "blue", 3);
+        S("line", { x1: 90, x2: 90, y1: 8, y2: 92, stroke: "var(--ink-2)", "stroke-dasharray": "3 3" }, g);
+        txt(g, 90, 108, "epoch 30", { anchor: "middle" });
+        const m = S("g", { class: "slide" }, g);
+        S("line", { x1: 118, x2: 118, y1: 8, y2: 92, stroke: "var(--bad)", "stroke-width": 3 }, m);
+        S("rect", { x: 112, y: 2, width: 12, height: 12, fill: "var(--bad)", rx: 2 }, m);
+      }),
+      P("avg", g => {
+        const sp = [[4, 14], [38, 14], [4, 52], [38, 52]];
+        sp.forEach(([x, y], j) => {
+          tile(g, x, y, 28, 28, { bg: "stage", empty: true });
+          S("ellipse", { cx: x + 14 + j % 2 * 2 - 1, cy: y + 14 + (j > 1 ? -1 : 1), rx: 7 + j % 3, ry: 5 + (j + 1) % 3, fill: "var(--ink-2)", transform: `rotate(${j * 25 - 30} ${x + 14} ${y + 14})` }, g);
+          const gh = S("rect", { x, y, width: 28, height: 28, rx: 3, fill: "var(--ink-2)", class: "ghost" }, g);
+          gh.setAttribute("style", `--dx:${122 - x - 14}px;--dy:${55 - y - 14}px;transform-box:fill-box;transform-origin:center`);
+        });
+        ARROW(g, 74, 96, 55);
+        const o = S("g", { class: "pop" }, g); pops(o, .9);
+        tile(o, 100, 33, 46, 46, { bg: "stage", empty: true });
+        S("ellipse", { cx: 123, cy: 56, rx: 12, ry: 9, fill: "var(--ink-2)", transform: "rotate(-15 123 56)" }, o);
+      }),
+      P("edge", g => {
+        S("path", { d: "M40 50 C38 25 70 10 98 22 C125 34 120 70 100 86 C78 102 45 90 40 50 Z", fill: "var(--blue-soft)", stroke: "var(--bad)", "stroke-width": 8, "stroke-linejoin": "round", class: "rim", transform: "translate(0 5)" }, g);
+      }),
+    ]);
+
+    // ---- render
+    const mm = matchMedia("(prefers-reduced-motion: reduce)");
+    function render(i) {
+      runs.forEach((r, k) => {
+        const s = stepOf[r.label], shown = i >= s, cur = i === LAST || s === i;
+        dots[k].classList.toggle("hide", !shown);
+        dots[k].classList.toggle("old", shown && !cur);
+        nums[k].setAttribute("opacity", cur && i !== LAST ? 1 : 0);
+        xl[k].setAttribute("opacity", shown ? 1 : .35);
+      });
+      band1.setAttribute("opacity", i >= 2 ? 1 : 0);
+      band2.setAttribute("opacity", i === LAST ? 1 : 0);
+      // idea card
+      const key = PIC[i];
+      Object.entries(pics).forEach(([k, g]) => {
+        g.classList.remove("on"); g.classList.remove("go");
+        if (k === key) { g.classList.add("on"); void g.getBoundingClientRect(); if (!mm.matches) g.classList.add("go"); }
+      });
+      picRoot.style.display = key ? "" : "none";
+      closing.style.display = key ? "none" : "";
+      cardText.replaceChildren();
+      const cur = INTRO[i].map(l => by[l]);
+      cur.forEach((r, j) => {
+        const y0 = (cur.length === 1 ? 372 : 346) + j * 56;
+        txt(cardText, 230, y0, `${r.label}: ${r.idea}`, { size: 16 });
+        txt(cardText, 230, y0 + 22, `Time: ${r.minutes} min`, { cls: "t2" });
+      });
+    }
+    scene.addEventListener("step", e => render(e.detail.i));
+
+    // ---- check that the numbers quoted in the captions match DATA
+    (() => {
+      const caps = [...scene.querySelectorAll(".captions li")].map(l => l.textContent);
+      const f = (l, k, n = 4) => by[l][k].toFixed(n), pts = (a, b) => ((by[a].dice - by[b].dice) * 100).toFixed(2);
+      const ahead = (a, b) => by[a].folds.filter((v, j) => v > by[b].folds[j]).length;
+      const need = [
+        [0, [f("01 A", "dice")]], [1, [f("01 B", "dice"), f("01 B", "attacked", 3), f("01 A", "attacked", 3)]],
+        [2, [f("02 A′", "dice"), pts("01 A", "02 A′")]], [3, [f("02 C", "dice"), pts("02 C", "02 A′"), ahead("02 C", "02 A′") + " of 5"]],
+        [4, [f("02 D", "dice"), f("05 G", "dice")]], [5, [f("03 E", "dice"), f("03 E", "attacked", 3), f("02 C", "attacked", 3)]],
+        [6, [f("04 F", "dice")]], [7, [f("06 C*", "dice"), f("06 F*", "dice")]],
+        [8, [f("07 H2", "dice"), f("07 H4", "dice"), f("07 H4", "tta")]], [9, [f("08 I", "dice")]],
+      ];
+      need.forEach(([s, vals]) => vals.forEach(v => console.assert(caps[s].includes(v), `experiments caption ${s}: expected ${v} from DATA`)));
+      console.assert(by["01 B"].folds.every((v, j) => v < by["01 A"].folds[j]), "experiments caption 1: B not lower on all 5 folds");
+      console.assert((by["01 B"].minutes / by["01 A"].minutes).toFixed(1) === "2.4", "experiments caption 1: 2.4 times");
+      console.assert(lo2 <= Math.min(...runs.slice(3).map(r => r.dice)) && Math.max(...runs.slice(3, 10).map(r => r.dice)) <= hi2 + 1e-9, "experiments: later runs outside the second band");
+    })();
+  })();
+  </script>
+</section>

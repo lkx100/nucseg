@@ -33,6 +33,9 @@ LABELS = {  # slug -> short name for plots
     "s05-hires-scale2": "05 G\nC + 2× scale",
     "s06-hires-min30": "06 C*\nC + min epoch",
     "s06-hires-aug-min30": "06 F*\nF + min epoch",
+    "s07-ens2": "07 H2\nC* + F* averaged",
+    "s07-ens4": "07 H4\n4 runs averaged",
+    "s08-hires-edge": "08 I\nC* + edge loss",
 }
 TYPES = {  # image_type key -> plain name
     "dark-gray/small": "Fluorescence, small",
@@ -56,7 +59,7 @@ def load_runs():
 
 def progress(runs):
     best = max(runs, key=lambda r: r["m"]["cv"].get("tta", r["m"]["cv"])["dice"])
-    fig, ax = plt.subplots(figsize=(13, 5))
+    fig, ax = plt.subplots(figsize=(15, 5))
     x = np.arange(len(runs))
     for i, r in enumerate(runs):
         cv = r["m"]["cv"]
@@ -73,7 +76,7 @@ def progress(runs):
         ax.axhspan(min(base), max(base), color=BLUE, alpha=0.12)
         ax.text(-0.45, max(base) + 0.0004, "run-to-run noise\n(same config, run twice)", color=BLUE, fontsize=8)
     gap = TARGET - best["m"]["cv"].get("tta", best["m"]["cv"])["dice"]
-    ax.set_xticks(x, [r["label"] for r in runs])
+    ax.set_xticks(x, [r["label"] for r in runs], fontsize=8)
     ax.set_ylim(0.895, 0.945)
     ax.set_ylabel("Dice (mean over images, then over 5 folds)")
     ax.set_title(f"Progress towards the 0.937 target: best so far is {gap * 100:.1f} points short", loc="left",
@@ -132,6 +135,7 @@ def by_type(runs, splits):
 
 def cost(runs):
     fig, (a1, a2) = plt.subplots(1, 2, figsize=(11, 4.2))
+    runs = [r for r in runs if "robust_dice" in r["m"]["cv"]]  # ensembles have no robustness score
     for r in runs:
         m = r["m"]
         a1.scatter(m["minutes"], m["cv"]["dice"], s=m["peak_vram_gb"] * 25, color=GOLD if r["slug"] == "s06-hires-min30" else BLUE,

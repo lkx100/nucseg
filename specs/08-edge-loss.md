@@ -1,6 +1,6 @@
 # 08: Edge-weighted loss on C*
 
-Status: approved 2026-10-03, running. Spec 07 found 83% of the wrong pixels within 2 pixels of a nucleus boundary.
+Status: done 2026-10-10. No win: +0.06 points against C* (see Outcome). Spec 07 found 83% of the wrong pixels within 2 pixels of a nucleus boundary.
 
 ## Question
 
@@ -45,3 +45,26 @@ If its TTA Dice reaches 0.937, we ask whether to score the locked test set.
 
 The extra weight map costs two pooling steps per batch, so the time per epoch should match C*: about 2.2
 GPU-hours for 5 folds. If fold 0 takes more than 40 minutes, we stop and ask.
+
+## Outcome
+
+| Arm | Run | CV Dice | Dice with TTA | IoU | Pooled Dice | FGSM Dice | Epochs per fold | Minutes |
+|---|---|---|---|---|---|---|---|---|
+| C* | 20261002-fa7e63a-s06-hires-min30 | 0.9207 ± 0.0081 | 0.9219 | 0.8611 | 0.9390 | 0.812 | 43/60/60/49/52 | 131 |
+| I | 20261003-e961d17-s08-hires-edge | 0.9213 ± 0.0077 | 0.9229 | 0.8621 | 0.9390 | 0.808 | 43/53/50/51/52 | 123 |
+
+Per fold:
+
+| Arm | Fold 0 | Fold 1 | Fold 2 | Fold 3 | Fold 4 |
+|---|---|---|---|---|---|
+| C* | 0.9188 | 0.9197 | 0.9233 | 0.9320 | 0.9095 |
+| I | 0.9204 | 0.9199 | 0.9242 | 0.9315 | 0.9103 |
+
+**I against C*:** +0.06 points, ahead on 4 of 5 folds (+0.16, +0.02, +0.09, −0.05, +0.08). No win. The TTA Dice
+of 0.9229 does not reach 0.937, so the locked test set stays untouched.
+
+By image type, brightfield rose from 0.908 to 0.912 (14 images) and the other three types moved by 0.1 points or
+less. Fold 0 took 24 minutes, inside the 40-minute limit.
+
+Verdict: no win, and C* stays the baseline. Five times the weight on edge pixels did not move the edge errors.
+That fits the risk named above, that the outlines are uncertain by a pixel or two. This run does not prove it.

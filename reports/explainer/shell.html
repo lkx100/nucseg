@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nuclei segmentation: the project in pictures</title>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f6f5f2; --surface: #fcfcfb; --stage: #ffffff; --line: #dedcd5;
+  --ink: #0b0b0b; --ink-2: #52514e; --muted: #86847d;
+  --blue: #2a78d6; --orange: #eb6834; --aqua: #1baf7a; --yellow: #eda100; --violet: #4a3aa7;
+  --good: #1f8a4c; --bad: #d03b3b; --neutral: #a9a79f;
+  --blue-soft: #dbe9f9; --orange-soft: #fbe3d8; --yellow-soft: #fbecc4; --bad-soft: #f8dcdc; --good-soft: #d9efe1;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #121211; --surface: #1a1a19; --stage: #20201e; --line: #36352f;
+    --ink: #ffffff; --ink-2: #c3c2b7; --muted: #8d8b82;
+    --blue: #3987e5; --orange: #d95926; --aqua: #199e70; --yellow: #c98500; --violet: #9085e9;
+    --good: #35a866; --bad: #e66767; --neutral: #6e6c64;
+    --blue-soft: #1c2f48; --orange-soft: #46261a; --yellow-soft: #3f3212; --bad-soft: #472222; --good-soft: #1a3a27;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 880px; margin: 0 auto; padding: 0 20px 120px; }
+nav.toc { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--line); }
+nav.toc ol { max-width: 880px; margin: 0 auto; padding: 10px 20px; display: flex; gap: 6px; list-style: none; flex-wrap: wrap; }
+nav.toc a { display: block; padding: 4px 12px; border-radius: 99px; color: var(--ink-2); text-decoration: none; font-size: 14px; }
+nav.toc a.on { background: var(--ink); color: var(--bg); }
+.chapter { padding: 72px 0 24px; border-bottom: 1px solid var(--line); }
+.chapter:last-of-type { border-bottom: 0; }
+.kicker { margin: 0 0 6px; color: var(--muted); font-size: 14px; letter-spacing: .04em; text-transform: uppercase; }
+h1 { font-size: 40px; line-height: 1.15; margin: 0 0 16px; letter-spacing: -.02em; }
+h2 { font-size: 30px; line-height: 1.2; margin: 0 0 12px; letter-spacing: -.015em; }
+h3 { font-size: 20px; margin: 40px 0 8px; }
+p { margin: 0 0 14px; }
+.lead { font-size: 19px; color: var(--ink-2); max-width: 46em; }
+.takeaway { margin: 22px 0 0; padding: 14px 18px; border-left: 4px solid var(--blue); background: var(--surface); border-radius: 0 10px 10px 0; }
+.note { color: var(--muted); font-size: 14px; }
+.term { border-bottom: 1px dashed var(--muted); cursor: help; }
+/* A scene is one animated picture with numbered captions. The shell adds the Back/Next buttons. */
+.scene { margin: 26px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.scene .stage { background: var(--stage); padding: 14px; position: relative; }
+.scene .stage svg { display: block; width: 100%; height: auto; }
+.scene .captions { list-style: none; margin: 0; padding: 16px 20px 4px; min-height: 96px; border-top: 1px solid var(--line); }
+.scene .captions li { display: none; }
+.scene .captions li.on { display: block; animation: fade .35s ease; }
+.scene .captions li b { font-weight: 650; }
+.scene .controls { display: flex; align-items: center; gap: 12px; padding: 8px 20px 16px; }
+.scene .controls button { font: inherit; font-size: 15px; padding: 7px 16px; border-radius: 99px; border: 1px solid var(--line); background: var(--stage);
+  color: var(--ink); cursor: pointer; }
+.scene .controls button.next { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.scene .controls button:disabled { opacity: .35; cursor: default; }
+.scene .controls .dots { display: flex; gap: 6px; flex: 1; justify-content: center; }
+.scene .controls .dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); cursor: pointer; }
+.scene .controls .dots i.on { background: var(--ink); }
+.scene .controls .count { color: var(--muted); font-size: 14px; min-width: 3.5em; text-align: right; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin: 22px 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.card .big { font-size: 34px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
+.card .lbl { color: var(--ink-2); font-size: 15px; }
+img.px { image-rendering: pixelated; }
+svg text { font-family: inherit; fill: var(--ink); }
+@media (max-width: 640px) { h1 { font-size: 30px; } h2 { font-size: 24px; } body { font-size: 16px; } }
+body.only .chapter:not(.pick), body.only nav.toc { display: none; }
+body.only .chapter { padding-top: 16px; }
+</style>
+</head>
+<body>
+<nav class="toc"><ol></ol></nav>
+<main>
+
+<section class="chapter" id="start" data-nav="Start">
+  <p class="kicker">Nuclei segmentation, as of 10 October 2026</p>
+  <h1>The project in pictures</h1>
+  <p class="lead">We teach a model to mark every cell nucleus in a microscope photo. This page walks through what the model does, how we check it, what the eight experiments tried, and what the last finding means. Each picture has a Next button. Go at your own speed.</p>
+  <div class="cards">
+    <div class="card"><div class="big">0.9235</div><div class="lbl">best score so far</div></div>
+    <div class="card"><div class="big">0.937</div><div class="lbl">the target</div></div>
+    <div class="card"><div class="big">1.35</div><div class="lbl">points still missing<br><span class="note">1 point = 0.01 of the score</span></div></div>
+    <div class="card"><div class="big">13</div><div class="lbl">runs in 8 experiments</div></div>
+  </div>
+  <p class="note">Every photo and every score on this page comes from our own data and runs. Where something is my explanation and not a measurement, the page says so.</p>
+</section>
+
+<!-- SECTIONS -->
+
+<section class="chapter" id="next" data-nav="What next">
+  <p class="kicker">Part 6</p>
+  <h2>Where this leaves us</h2>
+  <p class="lead">Three points hold the whole project so far.</p>
+  <div class="cards">
+    <div class="card"><div class="lbl"><b>1. One model change worked.</b><br>Giving the model a full-size view of the pixels (run C) lifted the score from about 0.914 to 0.920.</div></div>
+    <div class="card"><div class="lbl"><b>2. Nothing after it did.</b><br>Nine more runs tried five training ideas and model averaging. All of them land between 0.919 and 0.923. Running the same thing twice already differs by 0.35 points.</div></div>
+    <div class="card"><div class="lbl"><b>3. The missing points sit in few photos.</b><br>The typical photo already scores 0.938. 47 of 603 photos pull the average down, and one wrong answer key explains three of them.</div></div>
+  </div>
+  <h3>Two decisions that are yours</h3>
+  <div class="cards">
+    <div class="card"><div class="lbl"><b>Run experiment 09?</b><br>Train the current model again without the photo that has the blank answer key. It costs about 2.2 GPU-hours. My estimate is a gain of about 0.25 points. That is an estimate, not a result.</div></div>
+    <div class="card"><div class="lbl"><b>Correct the blank answer key?</b><br>It would recover about 0.15 points more. But it changes the answers we grade against, so I won't do it without your word.</div></div>
+  </div>
+  <p class="takeaway">Even with both, about 1 point stays missing. It sits in the other 44 low-scoring photos. Nobody has looked at what the model drew on them yet. That is the next thing to look at, before any new model idea.</p>
+</section>
+
+</main>
+<script src="assets/data.js"></script>
+<script>
+// Shared helpers. A section's own script runs after this one.
+window.X = {
+  svg(tag, attrs = {}, parent) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    if (parent) parent.appendChild(el);
+    return el;
+  },
+  css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); },
+  onVisible(el, fn, threshold = 0.35) {
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); fn(); } }, { threshold });
+    io.observe(el);
+  },
+  // Wires one .scene: shows caption i, draws the buttons, and fires a "step" event {i, prev} on the scene.
+  stepper(scene) {
+    const caps = [...scene.querySelectorAll(".captions > li")];
+    const bar = document.createElement("div");
+    bar.className = "controls";
+    bar.innerHTML = `<button class="back">Back</button><span class="dots">${caps.map(() => "<i></i>").join("")}</span><span class="count"></span><button class="next">Next</button>`;
+    scene.appendChild(bar);
+    const [back, next] = bar.querySelectorAll("button"), dots = [...bar.querySelectorAll("i")], count = bar.querySelector(".count");
+    let cur = -1;
+    const go = i => {
+      i = Math.max(0, Math.min(caps.length - 1, i));
+      const prev = cur; cur = i;
+      caps.forEach((c, k) => c.classList.toggle("on", k === i));
+      dots.forEach((d, k) => d.classList.toggle("on", k === i));
+      back.disabled = i === 0;
+      next.textContent = i === caps.length - 1 ? "Replay" : "Next";
+      count.textContent = `${i + 1} / ${caps.length}`;
+      scene.dispatchEvent(new CustomEvent("step", { detail: { i, prev } }));
+    };
+    back.onclick = () => go(cur - 1);
+    next.onclick = () => go(cur === caps.length - 1 ? 0 : cur + 1);
+    dots.forEach((d, k) => d.onclick = () => go(k));
+    scene.go = go;
+    return go;
+  },
+};
+</script>
+<!-- SCRIPTS -->
+<script>
+(() => {
+  const q = new URLSearchParams(location.search), only = q.get("only"), step = +q.get("step") || 0;
+  if (only) { document.body.classList.add("only"); document.getElementById(only)?.classList.add("pick"); }
+  // ?still=1 switches motion off, so a screenshot shows the end state of a step
+  if (q.get("still")) document.head.insertAdjacentHTML("beforeend", "<style>*,*::before,*::after{transition:none!important;animation-duration:0s!important;animation-delay:0s!important}</style>");
+  document.querySelectorAll(".scene").forEach(scene => {
+    const go = X.stepper(scene);
+    if (only) go(scene.closest(".chapter").id === only ? step : 0); else X.onVisible(scene, () => go(0));
+  });
+  const toc = document.querySelector("nav.toc ol"), chapters = [...document.querySelectorAll(".chapter[data-nav]")];
+  chapters.forEach(c => toc.insertAdjacentHTML("beforeend", `<li><a href="#${c.id}">${c.dataset.nav}</a></li>`));
+  const links = [...toc.querySelectorAll("a")];
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) links.forEach(a => a.classList.toggle("on", a.hash === "#" + e.target.id));
+  }), { rootMargin: "-40% 0px -55% 0px" });
+  chapters.forEach(c => io.observe(c));
+})();
+</script>
+</body>
+</html>
