@@ -2,7 +2,7 @@
 
 Nuclei segmentation (DSB2018). Read `WORKFLOW.md` before implementing anything.
 
-**Goal:** foreground Dice ≥ 0.937 (nucleus vs background). The target is set on purpose; don't lower it. Dice decides; IoU and pixel accuracy are reported alongside. PyTorch only.
+**Goal:** beat the reference paper's fold table (`specs/09-plain-cv.md`) on foreground Dice (nucleus vs background): highest fold ≥ 0.937 and five-fold mean ≥ 0.928, per image, with TTA, under plain 5-fold CV. The target is set on purpose; don't lower it. Dice decides; IoU and pixel accuracy are reported alongside, all in the paper's table form (per fold, mean ± std, highest). PyTorch only.
 
 ## Hard rules
 - **No training on this machine.** It is low-end and has no GPU. Locally: edits, `--smoke` (2 batches, tiny model, seconds of CPU), and reading pulled results. All real runs go to Kaggle.
@@ -25,6 +25,7 @@ Nuclei segmentation (DSB2018). Read `WORKFLOW.md` before implementing anything.
 - `notebooks/`: jupytext `# %%` `.py` files only
 - `runs/<run_id>/`: pulled outputs
 - `reports/`: overview figures for humans, redrawn by `uv run python reports/make_figures.py` after each run
+- `reports/explainer/`: animated page that explains the project in plain words (`index.html`). After new runs: `uv run python reports/explainer/build_assets.py`, edit `sections/`, then `python3 reports/explainer/build.py`
 
 `data/` and `runs/` are gitignored.
 
@@ -35,6 +36,7 @@ uv run python -m nucseg.train --config configs/X.yaml --run-id <id> --smoke
 CONFIG=configs/X.yaml DATASETS=sindhu9642/nuclei-seg-corrected GPU=1 launch/kaggle/push.sh notebooks/train_kernel.py <slug>
 launch/kaggle/pull.sh <slug> runs/<run_id>   # wait, download, wandb sync
 kaggle kernels status luckyx100/<slug>   # kaggle and jupytext are uv tools, no `uv run`
+uv run python -m nucseg.foldtable runs/<run_id> [...]   # fold table in the paper's form
 ```
 
 ## After every run

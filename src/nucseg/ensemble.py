@@ -21,6 +21,7 @@ import torch.nn.functional as F
 import yaml
 
 from nucseg.data import ROOT, find_data_root, fold_ids, load_samples, load_splits
+from nucseg.foldtable import fold_table
 from nucseg.model import build_model
 from nucseg.predict import predict
 from nucseg.train import SMOKE_LIMITS, WANDB_ENTITY, WANDB_PROJECT, git, log, mark_smoke_ok, setup_logging
@@ -176,7 +177,7 @@ def main():
                + "members=" + ",".join(f"{n}:{metrics['member_dice'][n]:.4f}" for n in names)
                + f" edge_err_share={edge['error_share']:.3f} dice_off_edge={edge['dice_off_edge']:.4f} "
                f"vram={metrics['peak_vram_gb']}GB time={metrics['minutes']}m")
-    (out / "summary.txt").write_text(summary + "\n")
+    (out / "summary.txt").write_text(f"{summary}\n\n{fold_table(folds)}\n")
     log.info(summary)
     if wb:
         wb.summary.update({f"cv/{m}": v for m, v in cv.items()} | {f"edge/{m}": v for m, v in edge.items()})

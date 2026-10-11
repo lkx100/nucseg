@@ -118,3 +118,49 @@ CV Dice 0.9201 (0.9214 with TTA), 0.05 points below C* and ahead on 1 of 5 folds
 below F. With training length fixed, the strong augmentation adds nothing to Dice; F's +0.16 in spec 04 was noise
 and longer training. It still helps under attack (FGSM Dice 0.832 against 0.812). C, F, C* and F* all sit within
 0.17 points, inside the run-to-run noise of about 0.3. Still 1.5 points short of 0.937 (best TTA stays F's 0.9227).
+
+## 2026-10-10: spec 07 arms H2 and H4 (averaged predictions), runs 20261003-512e574-s07-ens2 and -s07-ens4
+Both kernels finished on 2026-10-03; H4 and spec 08 were pulled today. H2 (C* and F*) scores 0.9217 (0.9223 with
+TTA), +0.10 against C* and ahead on 4 of 5 folds. H4 (C*, F*, C, F) scores 0.9230 (0.9235 with TTA, the best so
+far), +0.23 and ahead on all 5 folds. Both miss the 0.5-point bar, so no win. Every member alone matched its own
+run within 0.001. Edge diagnostic: 83% of the wrong pixels lie within 2 pixels of a nucleus boundary, and Dice
+with that band ignored is 0.975. H2 took 9 minutes and H4 24.
+
+## 2026-10-10: spec 08 arm I (edge-weighted loss), run 20261003-e961d17-s08-hires-edge
+CV Dice 0.9213 (0.9229 with TTA), +0.06 against C* and ahead on 4 of 5 folds, so no win. Brightfield rose from
+0.908 to 0.912 and the other types moved by 0.1 or less. FGSM Dice is 0.808 against 0.812. Weighting the edge
+pixels 5 times did not move the edge errors, which fits the label-noise risk the spec named. It took 123 minutes.
+
+## 2026-10-10: where the missing points are (per-image scores of H4, no new run)
+The median per-image Dice is 0.938, above the target. The mean is 0.9235 because of a tail: 47 of 603 images
+score below 0.85 and cost 1.46 points, more than the whole 1.35-point gap. 44 of the 47 are also below 0.85 in H2.
+One cause is a wrong label. Image `7b38c917` shows nuclei on about 16% of its area, but its mask has 26 pixels.
+It is one of only three 260×347 images among the 603 CV images (the locked test set holds two more). The other two, `0402a81e` and `df53d0b6`, are validated in fold 4 by
+models that trained on the empty mask, and they score 0.008 and 0.364 with errors about the size of their masks.
+So those models predict almost nothing on them. The three images cost 0.40 points of CV Dice (0.9275 without them).
+The same two images sit in fold 1's stop set (and `0402a81e` in fold 3's). That explains the 3-point drop of fold
+1's stop-set Dice near epoch 23 and the early stops of fold 1 since spec 02. No other image scores below 0.6.
+Of the 47, 28 are 256×256 fluorescence images and 9 are H&E. The four fluorescence ones among the worst 12 are
+dim and out of focus. Nobody has looked at predictions on the rest of the tail yet.
+
+## 2026-10-11: answer-key scan of the 603 CV images (no new run)
+A scan without any model (mask size, number of mask files, agreement with an Otsu cut of the image) found no second
+blank mask. Four masks have a single file; `7b38c917` is the only one on an image full of nuclei. Gap to 0.937 by
+type (H4 with TTA): small fluorescence 0.83 points, colour 0.65, grayscale brightfield 0.05, large fluorescence −0.19.
+The low fluorescence images are not the ones with the smallest nuclei: 22 of 37 have a mean nucleus area of 229 to 658 px.
+The user says 0.937 comes from a paper that ran plain 5-fold CV with no stop set. The paper is not in the repo yet.
+How it averages Dice decides whether the numbers compare: our pooled Dice is already 0.939 (C*) and 0.940 (H4).
+
+## 2026-10-11: protocol changed by the user, spec 09 drafted
+Decisions: leave image `7b38c917` out of training and scoring, and drop the stop set, so each fold trains on the
+other four and the validation fold picks the kept epoch. Both are config keys (`data.exclude`, `data.stop_set`);
+`eval/` is untouched. Scores under the new protocol don't compare with the 13 earlier runs, so spec 09 reruns C*
+as the new baseline (arm J). The user knows the paper's author; the questions for them are in the spec.
+
+## 2026-10-11: target and table form set by the user (no new run)
+Results are now shown as the paper's table (per fold, mean ± std, highest) for Dice, IoU and pixel accuracy:
+`nucseg.foldtable`, also written into `summary.txt`. Target: per-image Dice with TTA, highest fold ≥ 93.68 and mean
+≥ 92.81 (the paper's two rows). Best so far under the old protocol: H4 with 92.35 and 93.46.
+The paper's Dice equals 2·IoU/(1+IoU) in every fold, so it is very likely pooled over a fold of 512×512 images.
+H4 scored that way (every image weighted equally) gives 92.62 and 93.51; our raw-pixel `dice_pooled` (94.03) does
+not compare with the paper. Details in spec 09.

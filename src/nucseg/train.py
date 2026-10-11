@@ -3,7 +3,8 @@
     python -m nucseg.train --config configs/X.yaml --run-id <id> [--smoke] [--out DIR] [--data DIR]
 
 Trains one model per CV fold. Early stopping watches the fold's stop set, from `min_epochs` on. The validation fold scores
-the kept weights once, at the end. Writes metrics.json, summary.txt, train.log, config.yaml, plots/
+the kept weights once, at the end. With `data.stop_set: false` there is no stop set: the model trains on all four
+other folds and the validation fold is scored after every epoch and picks the kept weights. Writes metrics.json, summary.txt, train.log, config.yaml, plots/
 and ckpt/ into the output directory.
 """
 import argparse
@@ -23,6 +24,7 @@ import torch
 import yaml
 
 from nucseg.data import ROOT, CropDataset, find_data_root, fold_ids, load_samples, load_splits
+from nucseg.foldtable import fold_table
 from nucseg.losses import adversarial_neighbour, bce_dice
 from nucseg.model import build_model
 from nucseg.predict import fgsm, predict
@@ -119,9 +121,10 @@ def curves_plot(history, path):
     fig, (a, b) = plt.subplots(1, 2, figsize=(10, 3.5))
     for k, h in history.items():
         a.plot(h["train_loss"], label=f"fold {k}")
-        b.plot(h["stop_dice"], label=f"fold {k}")
+        watch = next(n for n in h if n != "train_loss")  # stop_dice, or val_epoch_dice without a stop set
+        b.plot(h[watch], label=f"fold {k}")
     a.set(title="train loss", xlabel="epoch")
-    b.set(title="stop-set Dice", xlabel="epoch")
+    b.set(title="validation-fold Dice per epoch" if watch == "val_epoch_dice" else "stop-set Dice", xlabel="epoch")
     b.legend(fontsize=7)
     fig.tight_layout()
     fig.savefig(path, dpi=80)
@@ -130,7 +133,8 @@ def curves_plot(history, path):
 
 def train_fold(k, cfg, splits, data_root, device, smoke, out, wb):
     tr, dcfg, ev, nsl = cfg["train"], cfg["data"], cfg["eval"], cfg["nsl"]
-    train_ids, stop_ids, val_ids = fold_ids(splits, k)
+    train_ids, stop_ids, val_ids = fold_ids(splits, k, dcfg.get("exclude", ()), dcfg.get("stop_set", True))
+    watch = "stop_dice" if stop_ids else "val_epoch_dice"  # the score that picks the kept epoch
     assert not set(splits["test"]) & set(train_ids + stop_ids + val_ids), "test id in a CV split"
     if smoke:
         train_ids, stop_ids, val_ids = (train_ids[:SMOKE_LIMITS["train"]], stop_ids[:SMOKE_LIMITS["stop"]],
@@ -163,7 +167,7 @@ def train_fold(k, cfg, splits, data_root, device, smoke, out, wb):
     alpha, eps = nsl["alpha"], nsl["eps_255"] / 255
     loss_kw = cfg.get("loss", {})  # edge_weight, edge_px; empty for the plain loss
 
-    hist = {"train_loss": [], "stop_dice": []}
+    hist = {"train_loss": [], watch: []}
     best, best_epoch, best_state, bad = -1.0, -1, None, 0
     for epoch in range(epochs):
         te = time.time()
@@ -189,9 +193,9 @@ def train_fold(k, cfg, splits, data_root, device, smoke, out, wb):
                 opt.zero_grad(set_to_none=True)
                 sched.step()
             losses.append(loss.item())
-        stop_dice = float(np.mean([s["dice"] for s in score(model, stop_s, ev, device, amp)]))
+        stop_dice = float(np.mean([s["dice"] for s in score(model, stop_s or val_s, ev, device, amp)]))
         hist["train_loss"].append(float(np.mean(losses)))
-        hist["stop_dice"].append(stop_dice)
+        hist[watch].append(stop_dice)
         if epoch + 1 < min_epochs:
             pass
         elif stop_dice > best:
@@ -199,13 +203,13 @@ def train_fold(k, cfg, splits, data_root, device, smoke, out, wb):
             best_state = {n: v.detach().cpu().clone() for n, v in model.state_dict().items()}
         else:
             bad += 1
-        log.info(f"fold {k} epoch {epoch + 1}/{epochs} loss {hist['train_loss'][-1]:.4f} stop_dice {stop_dice:.4f} "
+        log.info(f"fold {k} epoch {epoch + 1}/{epochs} loss {hist['train_loss'][-1]:.4f} {watch} {stop_dice:.4f} "
                  f"best {best:.4f}@{best_epoch + 1} lr {sched.get_last_lr()[0]:.2e} {time.time() - te:.0f}s")
         if wb:
             wb.log({f"fold{k}/epoch": epoch + 1, f"fold{k}/train_loss": hist["train_loss"][-1],
-                    f"fold{k}/stop_dice": stop_dice, f"fold{k}/lr": sched.get_last_lr()[0]})
+                    f"fold{k}/{watch}": stop_dice, f"fold{k}/lr": sched.get_last_lr()[0]})
         if bad >= tr["patience"]:
-            log.info(f"fold {k}: early stop, no stop-set gain for {bad} epochs")
+            log.info(f"fold {k}: early stop, no {watch} gain for {bad} epochs")
             break
 
     model.load_state_dict(best_state)
@@ -219,7 +223,7 @@ def train_fold(k, cfg, splits, data_root, device, smoke, out, wb):
         tta_scores = score(model, val_s, ev, device, amp, tta=True)
         summary["tta"] = fold_summary(tta_scores)
     prediction_grid(model, val_s, splits["image_type"], ev, device, amp, out / "plots" / f"fold{k}_preds.png")
-    fold = {"fold": k, "epochs_run": len(hist["stop_dice"]), "best_epoch": best_epoch + 1, "stop_dice": best,
+    fold = {"fold": k, "epochs_run": len(hist[watch]), "best_epoch": best_epoch + 1, watch: best,
             **summary, "minutes": round((time.time() - t0) / 60, 1)}
     log.info(f"fold {k}: val dice {summary['dice']:.4f} iou {summary['iou']:.4f} pixacc {summary['pixacc']:.4f} "
              f"robust_dice {summary['robust_dice']:.4f}"
@@ -300,7 +304,7 @@ def main():
                + (f"dice_tta={cv['tta']['dice']:.4f}±{cv['tta']['dice_std']:.4f} " if "tta" in cv else "") +
                f"epochs={'/'.join(str(f['epochs_run']) for f in folds)} vram={metrics['peak_vram_gb']}GB "
                f"time={metrics['minutes']}m")
-    (out / "summary.txt").write_text(summary + "\n")
+    (out / "summary.txt").write_text(f"{summary}\n\n{fold_table(folds)}\n")
     log.info(summary)
     if wb:
         wb.summary.update({f"cv/{m}": v for m, v in cv.items()})

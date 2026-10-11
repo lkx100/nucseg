@@ -30,13 +30,14 @@ def load_splits():
     return json.loads((ROOT / "eval" / "splits.json").read_text())
 
 
-def fold_ids(splits, fold):
-    """Train, stop and validation ids for one fold. The test set is never returned."""
+def fold_ids(splits, fold, exclude=(), stop_set=True):
+    """Train, stop and validation ids for one fold, without the `exclude` ids. The test set is never returned.
+    With `stop_set` off the stop ids stay in train and the stop list is empty."""
     val = splits["folds"][str(fold)]
-    stop = splits["stop"][str(fold)]
+    stop = splits["stop"][str(fold)] if stop_set else []
     pool = [i for k, ids in splits["folds"].items() for i in ids]
-    train = sorted(set(pool) - set(val) - set(stop))
-    return train, stop, val
+    train = sorted(set(pool) - set(val) - set(stop) - set(exclude))
+    return train, [i for i in stop if i not in exclude], [i for i in val if i not in exclude]
 
 
 _CACHE = {}

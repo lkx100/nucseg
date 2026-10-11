@@ -62,7 +62,7 @@ Every training entry point obeys the same rules, whatever backend runs it:
 2. **Run ID:** `<date>-<short-commit>-<slug>`. Refuse to launch with uncommitted changes, so every result maps to exact code.
 3. **Output directory**, always:
    - `metrics.json` holds the final and best metrics, epochs, wall time and peak VRAM.
-   - `summary.txt` is **one line**, `RESULT run=… dice=0.912±0.006 iou=… pixacc=… time=…`, and is what the agent reads.
+   - `summary.txt` starts with **one line**, `RESULT run=… dice=0.912±0.006 iou=… pixacc=… time=…`, followed by the fold table (per fold, mean ± std, highest). It is what the agent reads.
    - `train.log` is the full log. The agent only runs `tail` or `grep` on it and never reads it whole.
    - `plots/` holds loss curves and a grid of predictions against ground truth on fixed validation images.
    - Checkpoint: best only. Pulled on demand, not by default.
