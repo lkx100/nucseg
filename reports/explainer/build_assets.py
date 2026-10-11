@@ -27,6 +27,7 @@ IDEAS = {  # slug -> (label, plain idea, verdict)
     "s07-ens2": ("07 H2", "2 finished models averaged", "no win"),
     "s07-ens4": ("07 H4", "4 finished models averaged", "best so far"),
     "s08-hires-edge": ("08 I", "C* + edge mistakes count 5 times", "no win"),
+    "s09-plain-cv": ("09 J", "C* again, with the wrong answer key dropped", "new baseline"),
 }
 
 
@@ -120,7 +121,8 @@ for row in csv.DictReader(open(ROOT / "results.tsv"), delimiter="\t"):
     slug = row["run_id"].split("-", 2)[2]
     label, idea, verdict = IDEAS[slug]
     cv = m["cv"]
-    runs.append(dict(slug=slug, label=label, idea=idea, verdict=verdict, dice=round(cv["dice"], 4),
+    runs.append(dict(slug=slug, label=label, idea=idea, verdict=verdict, plainCv=slug == "s09-plain-cv",
+                     dice=round(cv["dice"], 4),
                      tta=round(cv["tta"]["dice"], 4) if "tta" in cv else None,
                      folds=[round(f["dice"], 4) for f in m["folds"]], minutes=round(m["minutes"]),
                      attacked=round(cv["robust_dice"], 3) if "robust_dice" in cv else None))

@@ -1,6 +1,6 @@
 # 09: C* under plain 5-fold CV, without the wrongly labelled image
 
-Status: draft 2026-10-11. The user approved the target, the table form and the settled points below on 2026-10-11. The launch still waits for their word. Code and config are written and pass `--smoke`; nothing is committed or launched.
+Status: done 2026-10-11. Arm J run as `20261011-1a5ff70-s09-plain-cv`. It misses the target on both rows, by 0.32 points on the highest fold and 0.06 on the mean (see Outcome). J is the new baseline.
 
 ## Question
 
@@ -89,4 +89,64 @@ C* took 131 minutes. Scoring about 120 images per epoch in place of 49, and trai
 
 ## Outcome
 
-Not run yet.
+Run `20261011-1a5ff70-s09-plain-cv`, 132 minutes, 6.1 GB, folds ran 41 to 47 epochs.
+
+| Row | Paper | Target | Arm J, per image with TTA | Short by |
+|---|---|---|---|---|
+| Highest fold | 93.68 | ≥ 93.68 | 93.36 | 0.32 |
+| Mean of five folds | 92.81 | ≥ 92.81 | 92.75 ± 0.40 | 0.06 |
+
+The full table, per image with TTA next to the plain score:
+
+| Fold | Dice | Dice TTA | Dice pooled | IoU | Pixel accuracy |
+|---|---|---|---|---|---|
+| 1 | 92.66 | 92.80 | 94.53 | 86.73 | 98.02 |
+| 2 | 92.01 | 92.12 | 94.05 | 85.81 | 98.11 |
+| 3 | 92.43 | 92.59 | 93.38 | 86.31 | 97.53 |
+| 4 | 93.20 | 93.36 | 94.24 | 87.61 | 98.17 |
+| 5 | 92.66 | 92.89 | 94.22 | 86.74 | 97.93 |
+| Mean ± std | 92.59 ± 0.39 | 92.75 ± 0.40 | 94.09 ± 0.38 | 86.64 ± 0.59 | 97.95 ± 0.23 |
+| Highest | 93.20 | 93.36 | 94.53 | 87.61 | 98.17 |
+
+### The gain is where the bad label was, and only there
+
+Against C* under the old protocol, per fold, with TTA:
+
+| Fold | C* | J | Change |
+|---|---|---|---|
+| 1 | 91.97 | 92.80 | +0.84 |
+| 2 | 92.07 | 92.12 | +0.05 |
+| 3 | 92.41 | 92.59 | +0.17 |
+| 4 | 93.33 | 93.36 | +0.04 |
+| 5 | 91.16 | 92.89 | +1.73 |
+
+Folds 1 and 5 of the table are fold 0 and fold 4 in the code. `7b38c917` is validated in fold 0, and its two
+look-alikes `0402a81e` and `df53d0b6` in fold 4. Those are the two folds that moved. The other three gained
+0.04 to 0.17 points, which is inside the run-to-run noise of about 0.3. So the whole 0.56-point rise of the mean
+comes from the wrong label, as predicted, and not from the 49 extra training images or the epoch choice.
+
+The fold spread fell from 0.70 to 0.40, because the two weak folds were weak for that one reason.
+
+### Why the highest fold barely moved
+
+The headline target is the highest fold, and that is the row the change did not touch: 93.33 for C*, 93.36 for J.
+The strongest fold never held a bad-label image, so it had nothing to gain. Lifting the floor does not lift the
+ceiling. Anything aimed at the 93.68 row has to make a good fold better, not fix a broken one.
+
+### Every fold peaked just after the minimum epoch
+
+Best epochs were 35, 33, 37, 31 and 33, with `min_epochs` at 30, and every fold then ran its full 10 patience
+epochs without a gain and stopped at 41 to 47. The curves plateau from about epoch 20. So the kept epoch is a
+noise peak on a flat plateau, not a real optimum, and the last 10 to 15 epochs of every fold buy nothing.
+
+### Caveats
+
+- The validation fold both picked the epoch and gave the score, so J leans high by an amount it cannot measure.
+  `val_epoch_dice` equals the reported fold Dice exactly. The spec accepted this to match the paper.
+- J does not compare with the 13 earlier runs. It is the baseline from here.
+- Robustness improved on its own: FGSM Dice 0.832 against C*'s 0.812.
+- Budget: fold 0 took 28.5 minutes against the 55-minute limit, and the run came in at 132 minutes against the
+  160 to 190 estimate, because scoring 120 images an epoch cost less than feared.
+
+Verdict: no win on either target row. The protocol change did what the diagnosis said it would and no more.
+The locked test set stays untouched.

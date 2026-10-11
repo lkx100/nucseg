@@ -164,3 +164,16 @@ Results are now shown as the paper's table (per fold, mean ± std, highest) for 
 The paper's Dice equals 2·IoU/(1+IoU) in every fold, so it is very likely pooled over a fold of 512×512 images.
 H4 scored that way (every image weighted equally) gives 92.62 and 93.51; our raw-pixel `dice_pooled` (94.03) does
 not compare with the paper. Details in spec 09.
+
+## 2026-10-11: spec 09 arm J (C* under plain CV), run 20261011-1a5ff70-s09-plain-cv
+Per-image Dice with TTA 92.75 ± 0.40, highest fold 93.36. That misses the paper's two rows by 0.06 on the mean
+and 0.32 on the highest, so no win, but J is the baseline from here. The 0.56-point rise over C* is all bad label:
+folds 0 and 4, which hold `7b38c917` and its two look-alikes, gained 0.84 and 1.73 points, while the other three
+gained 0.04 to 0.17, inside the 0.3 noise. The fold spread fell from 0.70 to 0.40 for the same reason.
+The headline target is the highest fold, and that row barely moved (93.33 to 93.36): the strongest fold never
+held a bad image, so it had nothing to gain. Lifting the floor does not lift the ceiling, and the next idea has to
+make a good fold better. Every fold peaked at epoch 31 to 37 with min_epochs at 30, then ran its full 10 patience
+epochs for nothing and stopped at 41 to 47; the curves are flat from about epoch 20, so the kept epoch is a noise
+peak on a plateau. 132 minutes against the 160 to 190 estimate, fold 0 28.5 min against the 55-minute limit.
+Caveat the spec accepted: the validation fold both picked the epoch and gave the score, so J leans high.
+FGSM Dice rose to 0.832 from 0.812 on its own.

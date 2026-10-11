@@ -1098,7 +1098,9 @@ window.X = {
   (() => {
     const D = window.DATA, scene = document.getElementById("experiments-a"), svg = scene.querySelector("svg");
     const S = (tag, attrs, parent) => X.svg(tag, attrs, parent);
-    const runs = D.runs, by = Object.fromEntries(runs.map(r => [r.label, r]));
+    // Part 4 compares runs scored the same way. The plain-CV run drops a photo and uses no stop set,
+    // so its number does not sit on this scale; it is told after part 5 instead.
+    const runs = D.runs.filter(r => !r.plainCv), by = Object.fromEntries(runs.map(r => [r.label, r]));
     const NAME = { "01 A": "baseline", "01 B": "adversarial", "02 A′": "rerun", "02 C": "full-size branch", "02 D": "2× photos",
       "03 E": "C + adversarial", "04 F": "C + altered copies", "05 G": "C + 2× photos", "06 C*": "C + min 30 epochs",
       "06 F*": "F + min 30 epochs", "07 H2": "2 averaged", "07 H4": "4 averaged", "08 I": "C* + edge weight" };

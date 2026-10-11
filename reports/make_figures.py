@@ -21,7 +21,9 @@ sys.path.insert(0, str(ROOT / "src"))
 from nucseg.data import find_data_root, load_samples, load_splits  # noqa: E402
 
 OUT = ROOT / "reports"
-TARGET = 0.937
+TARGET = 0.9368       # the paper's highest fold, the row the project is aimed at
+TARGET_MEAN = 0.9281  # the paper's mean of five folds
+PLAIN_CV = ("s09-plain-cv",)  # plain 5-fold CV, no stop set, bad label out; not comparable with the runs before it
 LABELS = {  # slug -> short name for plots
     "s01-base": "01 A\nbaseline",
     "s01-nsl": "01 B\nNSL adversarial",
@@ -36,6 +38,7 @@ LABELS = {  # slug -> short name for plots
     "s07-ens2": "07 H2\nC* + F* averaged",
     "s07-ens4": "07 H4\n4 runs averaged",
     "s08-hires-edge": "08 I\nC* + edge loss",
+    "s09-plain-cv": "09 J\nC* under plain CV",
 }
 TYPES = {  # image_type key -> plain name
     "dark-gray/small": "Fluorescence, small",
@@ -44,6 +47,7 @@ TYPES = {  # image_type key -> plain name
     "bright-gray/large": "Brightfield, gray",
 }
 GREEN, GRAY, GOLD, RED, BLUE = "#4c9a6a", "#a0a0a0", "#e0a526", "#c0392b", "#3a6ea5"
+PURPLE = "#6a4c93"
 
 plt.rcParams.update({"font.size": 10, "axes.spines.top": False, "axes.spines.right": False, "figure.dpi": 110})
 
@@ -58,41 +62,56 @@ def load_runs():
 
 
 def progress(runs):
-    best = max(runs, key=lambda r: r["m"]["cv"].get("tta", r["m"]["cv"])["dice"])
+    def tta(r):
+        return r["m"]["cv"].get("tta", r["m"]["cv"])["dice"]
+
+    # The two protocols are scored on different images, so each has its own best bar and they are split apart.
+    old = [r for r in runs if r["slug"] not in PLAIN_CV]
+    new = [r for r in runs if r["slug"] in PLAIN_CV]
+    runs = old + new
+    best = {max(g, key=tta)["slug"] for g in (old, new) if g}
     fig, ax = plt.subplots(figsize=(15, 5))
     x = np.arange(len(runs))
     for i, r in enumerate(runs):
         cv = r["m"]["cv"]
-        colour = GOLD if r is best else (GREEN if r["row"]["status"] == "keep" else GRAY)
+        colour = GOLD if r["slug"] in best else (GREEN if r["row"]["status"] == "keep" else GRAY)
         ax.bar(i, cv["dice"], color=colour, width=0.6, yerr=cv["dice_std"], capsize=4, ecolor="#555")
         ax.text(i, cv["dice"] - 0.0015, f"{cv['dice']:.4f}", ha="center", va="top", color="white", weight="bold")
         if "tta" in cv:
             ax.plot(i, cv["tta"]["dice"], "D", color="black", ms=6, zorder=5)
             ax.text(i + 0.12, cv["tta"]["dice"], f"{cv['tta']['dice']:.4f}", va="bottom", fontsize=8)
-    ax.axhline(TARGET, color=RED, ls="--", lw=2)
-    ax.text(len(runs) - 0.5, TARGET + 0.0008, f"target {TARGET}", color=RED, ha="right", weight="bold")
+    # The bars are the mean of five folds, so the line is the paper's mean row, not its highest-fold row.
+    ax.axhline(TARGET_MEAN, color=RED, ls="--", lw=2)
+    ax.text(-0.45, TARGET_MEAN + 0.0008, f"target for the mean {TARGET_MEAN}", color=RED, ha="left", weight="bold")
     base = [r["m"]["cv"]["dice"] for r in runs if r["slug"] in ("s01-base", "s02-base")]
     if len(base) == 2:
         ax.axhspan(min(base), max(base), color=BLUE, alpha=0.12)
         ax.text(-0.45, max(base) + 0.0004, "run-to-run noise\n(same config, run twice)", color=BLUE, fontsize=8)
-    gap = TARGET - best["m"]["cv"].get("tta", best["m"]["cv"])["dice"]
+    if new:
+        ax.axvline(len(old) - 0.5, color="#555", lw=1.2)
+        ax.text(len(old) - 0.42, 0.8965, "plain 5-fold CV\nno stop set, bad label out\n(not comparable to the left)",
+                fontsize=8, color="#555", va="bottom")
+    current = new[-1] if new else max(old, key=tta)
+    gap, gap_high = TARGET_MEAN - tta(current), TARGET - max(f["tta"]["dice"] for f in current["m"]["folds"])
     ax.set_xticks(x, [r["label"] for r in runs], fontsize=8)
     ax.set_ylim(0.895, 0.945)
     ax.set_ylabel("Dice (mean over images, then over 5 folds)")
-    ax.set_title(f"Progress towards the 0.937 target: best so far is {gap * 100:.1f} points short", loc="left",
-                 weight="bold")
+    ax.set_title(f"{current['label'].splitlines()[0]} is the baseline: {gap * 100:.2f} points short on the mean, "
+                 f"{gap_high * 100:.2f} on the highest fold", loc="left", weight="bold")
     handles = [plt.Rectangle((0, 0), 1, 1, color=c) for c in (GOLD, GREEN, GRAY)]
     handles.append(plt.Line2D([], [], marker="D", color="black", ls=""))
-    ax.legend(handles, ["best so far", "kept", "discarded", "with test-time augmentation"], loc="upper left",
+    ax.legend(handles, ["best of its protocol", "kept", "discarded", "with test-time augmentation"], loc="upper left",
               frameon=False, fontsize=8, ncol=4, bbox_to_anchor=(0, 0.93))
-    fig.text(0.01, 0.01, "Bars: CV Dice. Whiskers: spread across the 5 folds (std).", fontsize=8, color="#555")
+    fig.text(0.01, 0.01, "Bars: CV Dice. Whiskers: spread across the 5 folds (std). The paper's other row, the "
+                         f"highest single fold, is {TARGET}.", fontsize=8, color="#555")
     fig.tight_layout(rect=(0, 0.03, 1, 1))
     fig.savefig(OUT / "1-progress.png")
 
 
 def folds(runs):
     fig, ax = plt.subplots(figsize=(9, 4.5))
-    shown = {"s02-hires": GRAY, "s04-hires-aug": GREEN, "s06-hires-min30": GOLD, "s06-hires-aug-min30": BLUE}
+    shown = {"s02-hires": GRAY, "s04-hires-aug": GREEN, "s06-hires-min30": GOLD, "s06-hires-aug-min30": BLUE,
+             "s09-plain-cv": PURPLE}
     for r in [r for r in runs if r["slug"] in shown]:
         c = shown[r["slug"]]
         f = r["m"]["folds"]
@@ -104,7 +123,8 @@ def folds(runs):
     ax.text(4.2, TARGET + 0.0005, "target", color=RED, va="bottom", ha="right")
     ax.set_xticks(range(5), [f"fold {k}\n(~120 images)" for k in range(5)])
     ax.set_ylabel("Dice on the held-out fold")
-    ax.set_title("Every fold: fold 3 is easiest, fold 4 hardest", loc="left", weight="bold")
+    ax.set_title("Fold 4 was hardest because of one wrong label: 09 J drops it and the dip goes",
+                 loc="left", weight="bold")
     ax.legend(frameon=False, fontsize=8, loc="upper left", ncol=2)
     ax.set_ylim(0.90, 0.945)
     fig.tight_layout()
@@ -158,9 +178,12 @@ def cost(runs):
     a2.set_xticks(x, [r["label"].split("\n")[0] for r in runs])
     a2.set_ylim(0.75, 0.97)
     a2.set_ylabel("Dice")
-    a2.set_title("NSL (01 B, 03 E) bought robustness, not accuracy", loc="left", weight="bold")
-    a2.legend(frameon=False, fontsize=8, loc="upper right")
-    fig.tight_layout()
+    a2.set_title("NSL (01 B, 03 E) bought robustness, not Dice", loc="left", weight="bold")
+    a2.legend(frameon=False, fontsize=8, loc="upper right", ncol=2)
+    a2.set_xticklabels([r["label"].split("\n")[0] for r in runs], fontsize=8)
+    fig.text(0.01, 0.005, "09 J is scored under plain 5-fold CV with the wrong label dropped, so its Dice does not "
+                          "compare with the rest; its cost does.", fontsize=8, color="#555")
+    fig.tight_layout(rect=(0, 0.035, 1, 1))
     fig.savefig(OUT / "5-cost-and-robustness.png")
 
 
