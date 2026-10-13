@@ -188,3 +188,13 @@ of up to 2 pixels per photo, picked with the answer in hand, the mean is 93.41 a
 target rows; nearly all of it comes from small fluorescence photos (92.99 to 93.90). That is a ceiling, not a method.
 It explains why the edge-weighted loss of spec 08 changed nothing: the model is not unsure where the edge is, the
 answers disagree about it. Open: can the width be predicted from the photo? No GPU needed to check.
+
+## 2026-10-13: outline width cannot be guessed from simple photo measurements (follow-up to spec 10, no run)
+`reports/width_check.py` guesses each photo's offset (pixels the model draws wider or narrower than the answer,
+spread 0.68 px) from brightness, blur, nucleus size and the brightness fall-off at the model's outline, trained on
+the other four folds. The best predictor (20 most similar photos) explains 14% of it (19% in small fluorescence),
+and resizing masks by its guess gives 92.79 and 93.28 against J's 92.75 and 93.36: 23 photos better, 22 worse.
+A photo's 5 nearest look-alikes differ from it by 0.51 px, random photos by 0.64. So the width disagreement looks
+like a property of the answers, and the 0.66-point ceiling of spec 10 is mostly out of reach for a model that reads
+only the photo. First try of the script had a bug (an empty ring of pixels, so one measurement was always 0); fixed
+before any number was recorded. What is left to aim at: missed and invented nuclei (0.75 points in fold 3) and H&E.

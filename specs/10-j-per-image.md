@@ -84,3 +84,23 @@ Picture sheets: `reports/6-lowest-photos-best-fold.png` and `reports/6-lowest-ph
 Whether the width can be predicted. If photos with wide answers look different from photos with narrow ones (brightness, blur, nucleus size, source batch), a model can learn it. If look-alike photos carry different widths, no model can, and the last half point is the people who drew the outlines. That check needs no GPU: compare each photo's best width with what the photo looks like and with its neighbours in the training folds.
 
 Verdict: a diagnostic, so no win or loss. J stays the baseline. The next spec starts from the width question.
+
+## Follow-up 2026-10-13: can the width be told from the photo?
+
+Mostly not, with simple measurements. No GPU; `uv run python reports/width_check.py runs/20261012-c4b6e50-s10-j-per-image`.
+
+For every photo the script measures brightness, contrast, blur, the size and number of the model's nuclei and how the brightness falls off across the model's outline, none of which needs the answer. The thing to guess is the offset: how many pixels wider or narrower the model draws than the answer. Over all photos it averages +0.02 px with a spread of 0.68 px. Fold by fold, a predictor trained on the other four folds guesses the offset, and the mask is grown or shrunk by the rounded guess. That never reads a photo's own answer, so the Dice it gives is a real score.
+
+| Predictor | Share of the offset explained (small fluorescence) | Photos resized: better / worse | Mean | Highest fold |
+|---|---|---|---|---|
+| J as it is | | | 92.75 | 93.36 |
+| Straight line | 0.7% (−0.1%) | 2 / 11 | 92.67 | 93.21 |
+| 20 most similar photos | 14.3% (19.0%) | 23 / 22 | 92.79 | 93.28 |
+| Boosted trees | 4.2% (12.8%) | 24 / 41 | 92.70 | 93.15 |
+| Best width with the answer in hand (ceiling) | 100% | | 93.41 | 93.86 |
+
+- No predictor raises the highest fold, and the best one moves the mean by 0.04. A corrected photo is as likely to get worse as better.
+- A photo's five most similar photos differ from it by 0.51 px of offset, and five random ones by 0.64 px. Looking alike says little about the width.
+- Most small fluorescence photos are within half a pixel. The loss sits in the tails of 1.5 to 3 px (`reports/7-outline-width.png`), and `reports/7-look-alike-pairs.png` shows four pairs of the same kind of photo with opposite widths.
+
+Limits: these are a dozen hand-made measurements, not everything a network could see. But J is such a network, it saw each small photo nearly whole, and the offset is what it had left over. So the width disagreement looks like a property of the answers, and about half a point of per-photo Dice is out of reach for a single model that reads only the photo. That leaves the missed and invented nuclei (0.75 points in fold 3, of which we need 0.32) and H&E, the lowest type.
