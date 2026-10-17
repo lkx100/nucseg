@@ -198,3 +198,10 @@ A photo's 5 nearest look-alikes differ from it by 0.51 px, random photos by 0.64
 like a property of the answers, and the 0.66-point ceiling of spec 10 is mostly out of reach for a model that reads
 only the photo. First try of the script had a bug (an empty ring of pixels, so one measurement was always 0); fixed
 before any number was recorded. What is left to aim at: missed and invented nuclei (0.75 points in fold 3) and H&E.
+
+## 2026-10-17: one pixel of tracing is worth 9 points; the paper's "Highest" is mean + std (no run)
+The hand-drawn answers, traced 1 px wider, score 91.41 against themselves, and 89.37 traced 1 px narrower (all 602
+photos, `reports/answer_key.py`, picture `reports/8-answer-key.png`, made for the user's faculty). J at 92.75 is
+already closer to the answers than that, and 0.06 under the paper. The user noticed that the paper's row "Highest"
+(93.68) is mean + std in all three columns, not a fold; ours that way is 93.16, now a row in `nucseg.foldtable`.
+The user settled J as the model. Spec 11 tries four other kinds of attention on it, in parallel.

@@ -1,4 +1,5 @@
-"""The fold table of a run in the form of the reference paper: one row per fold, then mean ± std and the highest fold.
+"""The fold table of a run in the form of the reference paper: one row per fold, then mean ± std, the highest fold, and
+mean + std (the paper's row "Highest" is mean + std in all three of its columns).
 
     uv run python -m nucseg.foldtable runs/<run_id> [runs/<run_id> ...]
 
@@ -33,6 +34,7 @@ def fold_table(folds):
         lines.append(f"{f['fold'] + 1:<11}" + "".join(f"{v[i]:>14.2f}" for v in cols.values()))
     lines.append("Mean ± std " + "".join(f"{f'{v.mean():.2f} ± {v.std():.2f}':>14}" for v in cols.values()))
     lines.append("Highest    " + "".join(f"{v.max():>14.2f}" for v in cols.values()))
+    lines.append("Mean + std " + "".join(f"{v.mean() + v.std():>14.2f}" for v in cols.values()))
     return "\n".join(lines)
 
 

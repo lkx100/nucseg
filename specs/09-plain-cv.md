@@ -71,7 +71,7 @@ The paper is "NuRAFormer: A Hybrid UNet-Transformer with Reverse Attention and B
 | Mean ± std | 92.81 ± 0.87 | 86.60 ± 1.52 | 97.99 ± 0.27 |
 | Highest | 93.68 | 88.12 | 98.26 |
 
-- The headline 93.68 is the row "Highest", the best single fold. The table lists fold 2 as 93.70.
+- The headline 93.68 is the row "Highest". It is not a fold: in all three columns it equals mean + std (92.81 + 0.87, 86.60 + 1.52, 97.99 + 0.27). The best single fold is fold 2 at 93.70. Found by the user on 2026-10-17. `nucseg.foldtable` prints a "Mean + std" row for ours; J's is 93.16, lower than its best fold, because its folds are closer together (std 0.40 against 0.87).
 - Five-fold stratified cross-validation on all 670 images, with no separate test set. Early stopping is used and no third set is mentioned.
 - All images and masks are resized to 512×512 before training.
 - Dice is 2|P∩G| / (|P| + |G|) on the nucleus mask. The paper doesn't mention test-time augmentation.
