@@ -1,6 +1,6 @@
 # 11: Does a different kind of attention help the Swin-T U-Net?
 
-Status: running since 2026-10-17. Four arms in parallel, one Kaggle kernel each.
+Status: running since 2026-10-17. Four arms, one Kaggle kernel each, two at a time (Kaggle allows two GPU sessions per account).
 
 ## The model is settled
 
@@ -43,4 +43,14 @@ J took 132 minutes on one Kaggle GPU. L and M add a few small layers: about 2.5 
 
 ## Outcome
 
-Pending.
+The first push of L and M (2026-10-17) waited about three days for a GPU while Kaggle reported it as RUNNING, then ended in ERROR with an empty log. Nothing of ours ran. Pushed again 2026-10-20; they waited 80 minutes in the queue and then ran.
+
+| Arm | Run | TTA mean ± std | Highest | Mean + std | Verdict |
+|---|---|---|---|---|---|
+| J (baseline) | `20261011-1a5ff70-s09-plain-cv` | 92.75 ± 0.40 | 93.36 | 93.16 | |
+| L, attention gates | `20261020-90abcd5-s11-gate` | 92.71 ± 0.50 | 93.56 | 93.20 | no change: −0.04 |
+| M, scSE | `20261020-90abcd5-s11-scse` | 92.86 ± 0.37 | 93.43 | 93.23 | no change: +0.11, inside the luck band |
+
+- **M, scSE:** ahead of J on all five folds, by 0.05 to 0.19 points. That is too small to call, since a new seed alone moves J by up to 0.35. H&E photos, which the attention was meant to help, stayed where they were (89.76 against J's 89.85).
+- **L, attention gates:** behind J on four folds by about 0.1 and ahead on fold 4 by 0.20, which lifts the highest fold to 93.56, still 0.12 under the paper's 93.68. The mean does not move. The reference paper's decoder uses these gates; on our model they add nothing.
+- N, O: pending.

@@ -205,3 +205,13 @@ photos, `reports/answer_key.py`, picture `reports/8-answer-key.png`, made for th
 already closer to the answers than that, and 0.06 under the paper. The user noticed that the paper's row "Highest"
 (93.68) is mean + std in all three columns, not a fold; ours that way is 93.16, now a row in `nucseg.foldtable`.
 The user settled J as the model. Spec 11 tries four other kinds of attention on it, in parallel.
+
+## 2026-10-20: spec 11 arm M (scSE in the decoder), run 20261020-90abcd5-s11-scse
+scSE after each decoder block gives TTA Dice 92.86 ± 0.37, highest fold 93.43, against J's 92.75 / 93.36. It is ahead
+on every fold but by only 0.05 to 0.19, inside the 0.35 luck band, so it does not count as better. H&E photos did
+not improve (89.76). The first push of L and M sat in Kaggle's GPU queue for three days and failed without running.
+
+## 2026-10-20: spec 11 arm L (attention gates on the skips), run 20261020-90abcd5-s11-gate
+Attention gates give TTA Dice 92.71 ± 0.50, highest fold 93.56, against J's 92.75 / 93.36: the mean is flat, fold 4
+gains 0.20 and the other four lose about 0.1. The gates the reference paper uses do nothing for our model. With M
+(+0.11), both decoder arms sit inside the luck band; N (Swin V2) and O (MaxViT) are running.
