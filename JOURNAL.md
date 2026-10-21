@@ -215,3 +215,9 @@ not improve (89.76). The first push of L and M sat in Kaggle's GPU queue for thr
 Attention gates give TTA Dice 92.71 ± 0.50, highest fold 93.56, against J's 92.75 / 93.36: the mean is flat, fold 4
 gains 0.20 and the other four lose about 0.1. The gates the reference paper uses do nothing for our model. With M
 (+0.11), both decoder arms sit inside the luck band; N (Swin V2) and O (MaxViT) are running.
+
+## 2026-10-21: spec 11 arms N (Swin V2) and O (MaxViT), runs 20261020-90abcd5-s11-swinv2 and -maxvit; spec 11 done
+Swin V2 gives TTA Dice 92.71 / highest 93.50 and MaxViT 92.60 / 93.37, against J's 92.75 / 93.36. All five attention
+set-ups now sit between 92.60 and 92.86, inside one luck band, and all have their best fold on fold 4 (93.36 to 93.56).
+The kind of attention does not matter here. MaxViT was the most robust to FGSM (85.2), but no better on clean photos.
+J stays the model. The five runs differ in design, so averaging them (spec 07's ensemble code) is the obvious next try.

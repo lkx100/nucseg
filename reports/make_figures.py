@@ -24,7 +24,7 @@ OUT = ROOT / "reports"
 TARGET = 0.9368       # the paper's highest fold, the row the project is aimed at
 TARGET_MEAN = 0.9281  # the paper's mean of five folds
 RESCORES = ("s10-j-per-image",)  # scoring-only reruns of a model already in the charts
-PLAIN_CV = ("s09-plain-cv",)  # plain 5-fold CV, no stop set, bad label out; not comparable with the runs before it
+PLAIN_CV = ("s09-plain-cv", "s11-gate", "s11-scse", "s11-swinv2", "s11-maxvit")  # plain 5-fold CV, no stop set, bad label out; not comparable with the runs before it
 LABELS = {  # slug -> short name for plots
     "s01-base": "01 A\nbaseline",
     "s01-nsl": "01 B\nNSL adversarial",
@@ -40,6 +40,10 @@ LABELS = {  # slug -> short name for plots
     "s07-ens4": "07 H4\n4 runs averaged",
     "s08-hires-edge": "08 I\nC* + edge loss",
     "s09-plain-cv": "09 J\nC* under plain CV",
+    "s11-gate": "11 L\nJ + attention gates",
+    "s11-scse": "11 M\nJ + scSE",
+    "s11-swinv2": "11 N\nSwin V2 encoder",
+    "s11-maxvit": "11 O\nMaxViT encoder",
 }
 TYPES = {  # image_type key -> plain name
     "dark-gray/small": "Fluorescence, small",
@@ -73,7 +77,7 @@ def progress(runs):
     new = [r for r in runs if r["slug"] in PLAIN_CV]
     runs = old + new
     best = {max(g, key=tta)["slug"] for g in (old, new) if g}
-    fig, ax = plt.subplots(figsize=(15, 5))
+    fig, ax = plt.subplots(figsize=(17, 5))
     x = np.arange(len(runs))
     for i, r in enumerate(runs):
         cv = r["m"]["cv"]
@@ -94,7 +98,7 @@ def progress(runs):
         ax.axvline(len(old) - 0.5, color="#555", lw=1.2)
         ax.text(len(old) - 0.42, 0.8965, "plain 5-fold CV\nno stop set, bad label out\n(not comparable to the left)",
                 fontsize=8, color="#555", va="bottom")
-    current = new[-1] if new else max(old, key=tta)
+    current = next((r for r in new if r["row"]["status"] == "keep"), None) if new else max(old, key=tta)
     gap, gap_high = TARGET_MEAN - tta(current), TARGET - max(f["tta"]["dice"] for f in current["m"]["folds"])
     ax.set_xticks(x, [r["label"] for r in runs], fontsize=8)
     ax.set_ylim(0.895, 0.945)
@@ -164,7 +168,7 @@ def cost(runs):
         a1.scatter(m["minutes"], m["cv"]["dice"], s=m["peak_vram_gb"] * 25, color=GOLD if r["slug"] == "s06-hires-min30" else BLUE,
                    alpha=0.8)
         a1.annotate(r["label"].replace("\n", ": "), (m["minutes"], m["cv"]["dice"]), textcoords="offset points",
-                    xytext=(8, -3), fontsize=8)
+                    xytext=(-40, 9) if r["slug"] == "s11-gate" else (8, -3), fontsize=8)
     a1.set_xlabel("GPU minutes for all 5 folds (Kaggle T4)")
     a1.set_ylabel("CV Dice")
     a1.set_xlim(60, 400)
@@ -184,8 +188,8 @@ def cost(runs):
     a2.set_title("NSL (01 B, 03 E) bought robustness, not Dice", loc="left", weight="bold")
     a2.legend(frameon=False, fontsize=8, loc="upper right", ncol=2)
     a2.set_xticklabels([r["label"].split("\n")[0] for r in runs], fontsize=8)
-    fig.text(0.01, 0.005, "09 J is scored under plain 5-fold CV with the wrong label dropped, so its Dice does not "
-                          "compare with the rest; its cost does.", fontsize=8, color="#555")
+    fig.text(0.01, 0.005, "09 J and 11 L to O are scored under plain 5-fold CV with the wrong label dropped, so their Dice does not "
+                          "compare with the rest; their cost does.", fontsize=8, color="#555")
     fig.tight_layout(rect=(0, 0.035, 1, 1))
     fig.savefig(OUT / "5-cost-and-robustness.png")
 

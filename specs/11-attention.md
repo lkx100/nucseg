@@ -1,6 +1,6 @@
 # 11: Does a different kind of attention help the Swin-T U-Net?
 
-Status: running since 2026-10-17. Four arms, one Kaggle kernel each, two at a time (Kaggle allows two GPU sessions per account).
+Status: done 2026-10-21. No arm beats J; J stays the model. Four arms, one Kaggle kernel each, two at a time (Kaggle allows two GPU sessions per account).
 
 ## The model is settled
 
@@ -50,7 +50,14 @@ The first push of L and M (2026-10-17) waited about three days for a GPU while K
 | J (baseline) | `20261011-1a5ff70-s09-plain-cv` | 92.75 ± 0.40 | 93.36 | 93.16 | |
 | L, attention gates | `20261020-90abcd5-s11-gate` | 92.71 ± 0.50 | 93.56 | 93.20 | no change: −0.04 |
 | M, scSE | `20261020-90abcd5-s11-scse` | 92.86 ± 0.37 | 93.43 | 93.23 | no change: +0.11, inside the luck band |
+| N, Swin V2 | `20261020-90abcd5-s11-swinv2` | 92.71 ± 0.46 | 93.50 | 93.17 | no change: −0.04 |
+| O, MaxViT | `20261020-90abcd5-s11-maxvit` | 92.60 ± 0.44 | 93.37 | 93.04 | no change: −0.15 |
 
 - **M, scSE:** ahead of J on all five folds, by 0.05 to 0.19 points. That is too small to call, since a new seed alone moves J by up to 0.35. H&E photos, which the attention was meant to help, stayed where they were (89.76 against J's 89.85).
 - **L, attention gates:** behind J on four folds by about 0.1 and ahead on fold 4 by 0.20, which lifts the highest fold to 93.56, still 0.12 under the paper's 93.68. The mean does not move. The reference paper's decoder uses these gates; on our model they add nothing.
-- N, O: pending.
+- **N, Swin V2:** level with J (−0.04). Better on two folds, worse on three. It trained longer before peaking (epoch 39 to 56 against J's 31 to 37), so the closer match to our crop size did not speed it up either.
+- **O, MaxViT:** the lowest of the four (−0.15) and the heaviest (9.4 GB). Seeing the whole crop in every layer did not help find missed or invented nuclei; H&E went down (89.54). It was the most robust to FGSM noise (85.2 against J's 83.2), the one place it stood out.
+
+**What the four arms say together.** Five different attention set-ups (J and the four arms) land between 92.60 and 92.86 on the mean, a spread of 0.26, smaller than the 0.35 luck band. Every run's best fold is fold 4, between 93.36 and 93.56. Changing the attention, in the decoder or the encoder, does not move the score. That fits spec 10: most of what is left is outline width that differs between hand-drawn answers, and no model can learn it from the photo. No arm reached the target, so no second seed was run.
+
+Every arm's first fold took 75 to 83 minutes against 24 to 47 for the others, and J's first fold did not. The cause was not checked; it only costs time.
