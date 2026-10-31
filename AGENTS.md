@@ -2,7 +2,7 @@
 
 Nuclei segmentation (DSB2018). Read `WORKFLOW.md` before implementing anything.
 
-**Goal:** beat the reference paper's fold table (`specs/09-plain-cv.md`) on foreground Dice (nucleus vs background): highest fold ≥ 0.937 and five-fold mean ≥ 0.928, per image, with TTA, under plain 5-fold CV. The target is set on purpose; don't lower it. Dice decides; IoU and pixel accuracy are reported alongside, all in the paper's table form (per fold, mean ± std, highest). PyTorch only.
+**Goal:** beat the reference paper's fold table (`specs/09-plain-cv.md`) on foreground Dice (nucleus vs background): mean + std ≥ 93.68 (the paper's row "Highest" is mean + std, not a fold) and five-fold mean ≥ 92.81, per image, with TTA, under plain 5-fold CV. The target is set on purpose; don't lower it. Dice decides; IoU and pixel accuracy are reported alongside, all in the paper's table form (per fold, mean ± std, highest, mean + std). PyTorch only.
 
 ## Hard rules
 - **No training on this machine.** It is low-end and has no GPU. Locally: edits, `--smoke` (2 batches, tiny model, seconds of CPU), and reading pulled results. All real runs go to Kaggle.
