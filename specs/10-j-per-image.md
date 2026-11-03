@@ -104,3 +104,15 @@ For every photo the script measures brightness, contrast, blur, the size and num
 - Most small fluorescence photos are within half a pixel. The loss sits in the tails of 1.5 to 3 px (`reports/7-outline-width.png`), and `reports/7-look-alike-pairs.png` shows four pairs of the same kind of photo with opposite widths.
 
 Limits: these are a dozen hand-made measurements, not everything a network could see. But J is such a network, it saw each small photo nearly whole, and the offset is what it had left over. So the width disagreement looks like a property of the answers, and about half a point of per-photo Dice is out of reach for a single model that reads only the photo. That leaves the missed and invented nuclei (0.75 points in fold 3, of which we need 0.32) and H&E, the lowest type.
+
+## Follow-up 2026-11-03: how many answers are wrong, and of what kind
+
+No GPU; `uv run python reports/label_check.py runs/20261012-c4b6e50-s10-j-per-image` (10 minutes on CPU). It uses J's saved masks; arm M (scSE) has none. Six sheets of 20 random suspects each (`reports/9-label-check-*.png`) were judged by eye, which gives the share of suspects that are real errors.
+
+- **The mask files are clean.** 29,463 nuclei: no empty files, no duplicates, 9 overlapping pixels in total, 2 nuclei in two pieces, 50 with holes, none under 21 px.
+- **Stamped 5×5 dots.** 281 nuclei in 85 photos are exactly the same 21-pixel disk, almost all in small fluorescence photos. By eye 15 of 20 sit on empty background; by brightness 211 of 277 are dimmer than half a typical nucleus. So about 210 dots in about 63 photos mark nothing.
+- **Nuclei cut by the photo border are often not drawn.** 255 of the 531 blobs J finds that the answer lacks touch the border (148 photos), against 18% of the answer's own nuclei. By eye 16 of 20 are real nuclei, so about 200 are missing.
+- Other sheets, by eye: bright blobs no answer covers, 11 of 20 real nuclei (the rest noise); drawn nuclei no brighter than the background, 16 of 20 drawn on nothing (mostly the dots); J's misses, 6 to 8 of 20 are the answer's fault and 8 the model's.
+- Together that is about 500 to 600 wrong nuclei, about 2% of the 29,463, touching 210 of the 602 CV photos (dots 61, border 148, outline width off by 1.5 px or more 35).
+- They cost little. Rescoring J against answers with the dots removed and J's border blobs added gives mean 93.00 ± 0.38, mean + std 93.38 (as it is: 92.75, 93.16). The dots are worth 0.03, the border nuclei 0.22. This reads J's own masks, so it is the most such fixes can be worth, not a score. Outline width (above) is worth more, 0.66 on the mean.
+- No photo besides `7b38c917` is wrong as a whole; the lowest CV photo scores 0.62.

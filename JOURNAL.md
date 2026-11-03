@@ -221,3 +221,9 @@ Swin V2 gives TTA Dice 92.71 / highest 93.50 and MaxViT 92.60 / 93.37, against J
 set-ups now sit between 92.60 and 92.86, inside one luck band, and all have their best fold on fold 4 (93.36 to 93.56).
 The kind of attention does not matter here. MaxViT was the most robust to FGSM (85.2), but no better on clean photos.
 J stays the model. The five runs differ in design, so averaging them (spec 07's ensemble code) is the obvious next try.
+
+## 2026-11-03: how many hand-drawn answers are wrong (spec 10 follow-up, no run)
+About 2% of the 29,463 drawn nuclei are wrong: about 210 stamped 5×5 dots on empty background and about 200 nuclei
+cut by the photo border that nobody drew, checked by eye on random samples. Fixing them all would lift J by 0.25 on
+the mean (93.38 mean + std, still under 93.68). The outline-width disagreement found in spec 10 is worth more (0.66).
+Bad labels are not what stands between us and the paper. Script `reports/label_check.py`.
