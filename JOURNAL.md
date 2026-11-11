@@ -227,3 +227,9 @@ About 2% of the 29,463 drawn nuclei are wrong: about 210 stamped 5×5 dots on em
 cut by the photo border that nobody drew, checked by eye on random samples. Fixing them all would lift J by 0.25 on
 the mean (93.38 mean + std, still under 93.68). The outline-width disagreement found in spec 10 is worth more (0.66).
 Bad labels are not what stands between us and the paper. Script `reports/label_check.py`.
+
+## 2026-11-11: spec 12, J on the whole photo as well as tiles (SAHI question), run 20261111-f700654-s12-whole-photo
+The user asked whether SAHI tiled inference suits us. We already tile at full size, so the only new part was SAHI's
+extra pass over the whole photo. Scoring J's saved models three ways gives TTA Dice 92.75 (tiles, reproduces J),
+92.76 (whole photo) and 92.77 (both averaged). Half the photos are 256×256 and can't change; the rest move a few
+hundredths. Tile edges were never a source of error. Tiles stay; SAHI and YOLO are settled as not useful here.
