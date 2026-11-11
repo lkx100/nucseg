@@ -123,13 +123,13 @@ class SwinUNet(nn.Module):
 
 def build_model(cfg, smoke=False):
     m = dict(cfg["model"])
-    kwargs = {}
+    kwargs = dict(m.get("encoder_kwargs") or {})  # e.g. strict_img_size: false lets Swin take any input size
     if smoke:  # tiny untrained encoder of the same family, CPU-sized
         m["pretrained"] = False
         if m["encoder"].startswith("maxvit"):
-            kwargs = dict(embed_dim=(32, 64, 128, 256), depths=(1, 1, 1, 1), stem_width=16)
+            kwargs |= dict(embed_dim=(32, 64, 128, 256), depths=(1, 1, 1, 1), stem_width=16)
         else:
-            kwargs = dict(embed_dim=24, depths=(1, 1, 1, 1), num_heads=(1, 2, 4, 8))
+            kwargs |= dict(embed_dim=24, depths=(1, 1, 1, 1), num_heads=(1, 2, 4, 8))
     return SwinUNet(m["encoder"], m["pretrained"], cfg["data"]["crop"], m.get("window_size"), m["decoder_channels"],
                     kwargs, hires_skip=m.get("hires_skip", False), input_scale=m.get("input_scale", 1),
                     out_indices=m.get("out_indices", (0, 1, 2, 3)), decoder_attention=m.get("decoder_attention"))

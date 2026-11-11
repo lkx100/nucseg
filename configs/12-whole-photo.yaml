@@ -1,0 +1,17 @@
+# Spec 12: score arm J three ways, tiles (as before), the whole photo in one pass, and the mean of the two.
+# No training. One member, so nothing is averaged across models.
+members:               # kernel slug whose output holds ckpt/fold<k>.pt, and the config that built its model
+  - name: "J"
+    slug: s09-plain-cv
+    config: configs/09-hires-plain-cv.yaml
+    model_override:    # same weights; lets the Swin encoder take any photo size (attention mask rebuilt per size)
+      encoder_kwargs: {strict_img_size: false}
+folds: [0, 1, 2, 3, 4]
+data:
+  exclude:             # dropped from scoring, as in arm J
+    - 7b38c9173ebe69b4c6ba7e703c0c27f39305d9b2910f46405993d2ea7a963b80
+eval:
+  tile: 256            # tile size, and the multiple the whole photo is reflect-padded to
+  overlap: 0.5
+  tta: true            # also score with 8-orientation TTA
+  views: [tiles, whole, both]   # first is the headline and must reproduce J (92.75 with TTA)

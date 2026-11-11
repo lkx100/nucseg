@@ -8,6 +8,12 @@ metrics.json, summary.txt, per_image.json, train.log and config.yaml into the ou
 drops image ids from scoring, as in training. With `eval.save_masks` the scored mask of every image (with TTA
 if it is on) is written to masks/<id>.png. One member is allowed: then nothing is averaged and the run only
 re-scores that model image by image.
+
+`eval.views` lists how each image is predicted: "tiles" (the default), "whole" (one pass over the whole image) or
+"both" (see nucseg.predict). The first view is the headline and feeds every score that existed before views; each
+view also gets its own fold table in summary.txt, under metrics.json `views`, and per image in per_image.json.
+A member's `model_override` is merged into its config's `model` section, for settings that change how a saved
+model runs but not its weights (e.g. `encoder_kwargs: {strict_img_size: false}`).
 """
 import argparse
 import json
@@ -47,6 +53,7 @@ def find_ckpt_dir(slug, root):
 def load_member(member, k, ckpt_dir, device, smoke):
     cfg = yaml.safe_load((ROOT / member["config"]).read_text())
     cfg["model"]["pretrained"] = False  # the checkpoint supplies every weight
+    cfg["model"].update(member.get("model_override") or {})
     model = build_model(cfg, smoke).to(device)
     state = torch.load(ckpt_dir / f"fold{k}.pt", map_location="cpu")
     model.load_state_dict({n: v.float() if v.is_floating_point() else v for n, v in state.items()})
@@ -73,22 +80,28 @@ def run_fold(k, cfg, members, ckpt_dirs, splits, data_root, device, amp, smoke, 
         val_ids = val_ids[:SMOKE_LIMITS["val"]]
     val_s = load_samples(data_root, val_ids)
     modes = (False, True) if ev.get("tta") else (False,)
-    mean = {tta: {} for tta in modes}  # tta -> image id -> mean probability over the members
-    solo = {}
+    views = ev.get("views", ["tiles"])
+    # (view, tta) -> image id -> mean probability over the members
+    mean = {(v, tta): {} for v in views for tta in modes}
+    solo = {}  # member scores, headline view only
     for m in members:
         model = load_member(m, k, ckpt_dirs[m["slug"]], device, smoke)
         solo[m["name"]] = {}
-        for tta in modes:
-            scores = []
-            for i, (img, gt) in val_s.items():
-                probs = predict(model, img, ev["tile"], ev["overlap"], device, amp, tta=tta)
-                scores.append(image_scores(binarize(probs), gt))
-                mean[tta][i] = mean[tta].get(i, 0) + probs / len(members)
-            solo[m["name"]]["tta_dice" if tta else "dice"] = fold_summary(scores)["dice"]
+        for v in views:
+            for tta in modes:
+                member_scores = []
+                for i, (img, gt) in val_s.items():
+                    probs = predict(model, img, ev["tile"], ev["overlap"], device, amp, tta=tta, view=v)
+                    member_scores.append(image_scores(binarize(probs), gt))
+                    mean[v, tta][i] = mean[v, tta].get(i, 0) + probs / len(members)
+                if v == views[0]:
+                    solo[m["name"]]["tta_dice" if tta else "dice"] = fold_summary(member_scores)["dice"]
         del model
 
-    scores = {tta: [{"id": i, **image_scores(binarize(mean[tta][i]), gt)} for i, (_, gt) in val_s.items()]
-              for tta in modes}
+    by_view = {key: [{"id": i, **image_scores(binarize(probs[i]), gt)} for i, (_, gt) in val_s.items()]
+               for key, probs in mean.items()}
+    scores = {tta: by_view[views[0], tta] for tta in modes}
+    mean = {tta: mean[views[0], tta] for tta in modes}
     edge = [edge_stats(binarize(mean[False][i]), gt) for i, (_, gt) in val_s.items()]
     if ev.get("save_masks"):
         (out / "masks").mkdir(exist_ok=True)
@@ -99,12 +112,15 @@ def run_fold(k, cfg, members, ckpt_dirs, splits, data_root, device, amp, smoke, 
             "err": sum(e["err"] for e in edge), "err_edge": sum(e["err_edge"] for e in edge)}
     if True in modes:
         fold["tta"] = fold_summary(scores[True])
+    fold["views"] = {v: {"fold": k, **fold_summary(by_view[v, False]),
+                         **({"tta": fold_summary(by_view[v, True])} if True in modes else {})} for v in views}
     fold["minutes"] = round((time.time() - t0) / 60, 1)
     log.info(f"fold {k}: ensemble dice {fold['dice']:.4f}"
              + (f" tta_dice {fold['tta']['dice']:.4f}" if "tta" in fold else "")
              + " members " + " ".join(f"{n}={s['dice']:.4f}" for n, s in solo.items())
-             + f" edge_err_share {fold['err_edge'] / max(1, fold['err']):.3f} ({fold['minutes']} min)")
-    return fold, scores, edge
+             + f" edge_err_share {fold['err_edge'] / max(1, fold['err']):.3f} ({fold['minutes']} min)"
+             + "".join(f" {v}={s.get('tta', s)['dice']:.4f}" for v, s in fold["views"].items()))
+    return fold, scores, edge, by_view
 
 
 def main():
@@ -150,9 +166,14 @@ def main():
     t0 = time.time()
     folds, per_image, by_type, by_type_tta, off_edge = [], [], defaultdict(list), defaultdict(list), defaultdict(list)
     for k in cfg["folds"]:
-        fold, scores, edge = run_fold(k, cfg, members, ckpt_dirs, splits, data_root, device, amp, args.smoke, out)
+        fold, scores, edge, by_view = run_fold(k, cfg, members, ckpt_dirs, splits, data_root, device, amp,
+                                               args.smoke, out)
         folds.append(fold)
         tta = {s["id"]: s["dice"] for s in scores.get(True, [])}
+        view_dice = {i: {} for i in tta or [s["id"] for s in scores[False]]}
+        for (v, t), vs in by_view.items():
+            for s in vs:
+                view_dice[s["id"]][f"dice_tta_{v}" if t else f"dice_{v}"] = s["dice"]
         for s, e in zip(scores[False], edge):
             t = splits["image_type"][s["id"]]
             by_type[t].append(s["dice"])
@@ -160,12 +181,16 @@ def main():
             if s["id"] in tta:
                 by_type_tta[t].append(tta[s["id"]])
             per_image.append({"id": s["id"], "fold": k, "type": t, "dice": s["dice"], "dice_tta": tta.get(s["id"]),
-                              **e})
+                              **e, **view_dice[s["id"]]})
 
     cv = cv_summary(folds)
     if all("tta" in f for f in folds):
         cv["tta"] = cv_summary([f["tta"] for f in folds])
     names = [m["name"] for m in members]
+    views = list(folds[0]["views"])
+    view_cv = {v: {**cv_summary([f["views"][v] for f in folds]),
+                   **({"tta": cv_summary([f["views"][v]["tta"] for f in folds])} if "tta" in cv else {})}
+               for v in views}
     edge = {"px": EDGE_PX, "error_share": sum(f["err_edge"] for f in folds) / max(1, sum(f["err"] for f in folds)),
             "dice_off_edge": float(np.mean([f["dice_off_edge"] for f in folds])),
             "dice_off_edge_by_type": {t: float(np.mean(v)) for t, v in sorted(off_edge.items())}}
@@ -174,7 +199,7 @@ def main():
         "cv": cv, "member_dice": {n: float(np.mean([f["members"][n]["dice"] for f in folds])) for n in names},
         "dice_by_type": {t: float(np.mean(v)) for t, v in sorted(by_type.items())},
         "dice_by_type_tta": {t: float(np.mean(v)) for t, v in sorted(by_type_tta.items())},
-        "edge": edge, "folds": folds, "minutes": round((time.time() - t0) / 60, 1),
+        "edge": edge, "views": view_cv, "folds": folds, "minutes": round((time.time() - t0) / 60, 1),
         "peak_vram_gb": round(torch.cuda.max_memory_allocated() / 1e9, 2) if device.type == "cuda" else 0.0,
         "versions": {"torch": torch.__version__, "timm": __import__("timm").__version__},
     }
@@ -185,8 +210,12 @@ def main():
                + (f"dice_tta={cv['tta']['dice']:.4f}±{cv['tta']['dice_std']:.4f} " if "tta" in cv else "")
                + "members=" + ",".join(f"{n}:{metrics['member_dice'][n]:.4f}" for n in names)
                + f" edge_err_share={edge['error_share']:.3f} dice_off_edge={edge['dice_off_edge']:.4f} "
-               f"vram={metrics['peak_vram_gb']}GB time={metrics['minutes']}m")
-    (out / "summary.txt").write_text(f"{summary}\n\n{fold_table(folds)}\n")
+               + ("views=" + ",".join(f"{v}:{c.get('tta', c)['dice']:.4f}" for v, c in view_cv.items()) + " "
+                  if len(views) > 1 else "")
+               + f"vram={metrics['peak_vram_gb']}GB time={metrics['minutes']}m")
+    tables = "".join(f"\nView: {v}\n{fold_table([f['views'][v] for f in folds])}\n" for v in views[1:])
+    head = f"View: {views[0]}\n" if len(views) > 1 else ""
+    (out / "summary.txt").write_text(f"{summary}\n\n{head}{fold_table(folds)}\n{tables}")
     log.info(summary)
     if wb:
         wb.summary.update({f"cv/{m}": v for m, v in cv.items()} | {f"edge/{m}": v for m, v in edge.items()})
