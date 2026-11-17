@@ -233,3 +233,9 @@ The user asked whether SAHI tiled inference suits us. We already tile at full si
 extra pass over the whole photo. Scoring J's saved models three ways gives TTA Dice 92.75 (tiles, reproduces J),
 92.76 (whole photo) and 92.77 (both averaged). Half the photos are 256×256 and can't change; the rest move a few
 hundredths. Tile edges were never a source of error. Tiles stay; SAHI and YOLO are settled as not useful here.
+
+## 2026-11-17: spec 13, arm M on the 67 locked test images, run 20261117-769438f-s13-scse-test
+The user asked to score the scSE model on the test set, the first time it was opened. Each of M's five fold models
+scored all 67 photos: TTA Dice 92.99 ± 0.18, highest 93.22, mean + std 93.17 (CV was 92.86 / 93.43 / 93.23).
+The model does as well on unseen photos as in CV. One photo, `adc315bd`, scores 54 with every model and costs
+0.6 points of the mean on its own. The test set now counts as seen.

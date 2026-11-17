@@ -1,6 +1,6 @@
 # 13: How does arm M score on the 67 locked test images?
 
-Status: running.
+Status: done 2026-11-17. M scores 92.99 ± 0.18 with TTA on the test set, a little above its CV score (see Outcome).
 
 ## Question
 
@@ -29,3 +29,20 @@ Per-image Dice with TTA, in the paper's fold table: one row per fold model, mean
 67 images × 5 models × 2 (with and without TTA): about 15 GPU-minutes. If the kernel runs longer than 45 minutes, we stop and ask.
 
 ## Outcome
+
+Run `20261117-769438f-s13-scse-test`, 6.6 minutes, 1.0 GB. All 67 test images were scored by all five models.
+
+Per-image Dice with TTA:
+
+| | Test (this run) | CV (spec 11) | Target |
+|---|---|---|---|
+| Mean ± std | 92.99 ± 0.18 | 92.86 ± 0.37 | 92.81 |
+| Highest fold | 93.22 | 93.43 | |
+| Mean + std | 93.17 | 93.23 | 93.68 |
+
+Per fold with TTA: 93.02, 93.22, 92.67, 93.05, 92.98. IoU 87.22 ± 0.25, pixel accuracy 98.08 ± 0.05. Without TTA: 92.84 ± 0.17.
+
+- M holds up on unseen photos: the test mean is 0.13 above its CV mean, so the CV score was not tuned to the folds.
+- The mean clears 92.81; mean + std (93.17) misses 93.68. The std is half the CV one because all five models see the same images, so mean + std on the test set is not the paper's number and should not be compared with it.
+- One photo, `adc315bd` (dark-gray, 360×360), scores 53.9 with every model. Without it the mean would be 93.58. The other 66 are all above 80.
+- By type with TTA: dark-gray/small 93.51, dark-gray/large 93.67, H&E 90.76, bright-gray/large 90.31 (only 2 photos).
