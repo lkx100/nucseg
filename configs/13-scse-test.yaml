@@ -1,0 +1,15 @@
+# Spec 13: score arm M (Swin-T U-Net + scSE, spec 11) on the 67 locked test images. No training.
+# Each fold's model scores all 67 images, so the fold table has five rows on the same images.
+members:               # kernel slug whose output holds ckpt/fold<k>.pt, and the config that built its model
+  - name: "M"
+    slug: s11-scse
+    config: configs/11-scse.yaml
+folds: [0, 1, 2, 3, 4]
+data:
+  exclude:             # as in arm M; this image is not in the test set, so nothing is dropped
+    - 7b38c9173ebe69b4c6ba7e703c0c27f39305d9b2910f46405993d2ea7a963b80
+eval:
+  split: test          # the 67 hold-out images instead of each fold's validation images
+  tile: 256
+  overlap: 0.5
+  tta: true            # also score with 8-orientation TTA

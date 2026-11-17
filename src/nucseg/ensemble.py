@@ -12,6 +12,8 @@ re-scores that model image by image.
 `eval.views` lists how each image is predicted: "tiles" (the default), "whole" (one pass over the whole image) or
 "both" (see nucseg.predict). The first view is the headline and feeds every score that existed before views; each
 view also gets its own fold table in summary.txt, under metrics.json `views`, and per image in per_image.json.
+`eval.split: test` scores the locked test set (eval/splits.json "test") with each fold's model instead of the
+fold's validation images, so the fold table has one row per fold model, all on the same images.
 A member's `model_override` is merged into its config's `model` section, for settings that change how a saved
 model runs but not its weights (e.g. `encoder_kwargs: {strict_img_size: false}`).
 """
@@ -75,7 +77,11 @@ def edge_stats(pred, gt):
 def run_fold(k, cfg, members, ckpt_dirs, splits, data_root, device, amp, smoke, out):
     ev = cfg["eval"]
     t0 = time.time()
-    val_ids = fold_ids(splits, k, cfg.get("data", {}).get("exclude", ()))[2]
+    exclude = cfg.get("data", {}).get("exclude", ())
+    if ev.get("split", "val") == "test":  # every fold's model scores the same locked test images
+        val_ids = [i for i in splits["test"] if i not in exclude]
+    else:
+        val_ids = fold_ids(splits, k, exclude)[2]
     if smoke:
         val_ids = val_ids[:SMOKE_LIMITS["val"]]
     val_s = load_samples(data_root, val_ids)
@@ -155,7 +161,7 @@ def main():
     data_root = find_data_root(args.data)
     splits = load_splits()
     log.info(f"run {args.run_id} commit {commit[:7]} device {device} data {data_root} smoke={args.smoke} "
-             f"ckpt {' '.join(str(d) for d in ckpt_dirs.values())}")
+             f"split {cfg['eval'].get('split', 'val')} ckpt {' '.join(str(d) for d in ckpt_dirs.values())}")
 
     wb = None  # smoke skips W&B unless WANDB_MODE is set explicitly
     if os.environ.get("WANDB_MODE", "disabled" if args.smoke else "offline") != "disabled":
@@ -196,6 +202,7 @@ def main():
             "dice_off_edge_by_type": {t: float(np.mean(v)) for t, v in sorted(off_edge.items())}}
     metrics = {
         "run_id": args.run_id, "commit": commit, "config": args.config, "smoke": args.smoke, "members": names,
+        "split": cfg["eval"].get("split", "val"),
         "cv": cv, "member_dice": {n: float(np.mean([f["members"][n]["dice"] for f in folds])) for n in names},
         "dice_by_type": {t: float(np.mean(v)) for t, v in sorted(by_type.items())},
         "dice_by_type_tta": {t: float(np.mean(v)) for t, v in sorted(by_type_tta.items())},
