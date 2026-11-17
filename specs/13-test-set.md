@@ -1,6 +1,6 @@
 # 13: How does arm M score on the 67 locked test images?
 
-Status: done 2026-11-17. M scores 92.99 ± 0.18 with TTA on the test set, a little above its CV score (see Outcome).
+Status: done 2026-11-17. M scores 92.99 ± 0.18 with TTA on all 67 test images, and 93.58 ± 0.18 without photo `adc315bd`, whose hand-drawn answer is missing 10 of its 15 nuclei (see Outcome).
 
 ## Question
 
@@ -46,3 +46,19 @@ Per fold with TTA: 93.02, 93.22, 92.67, 93.05, 92.98. IoU 87.22 ± 0.25, pixel a
 - The mean clears 92.81; mean + std (93.17) misses 93.68. The std is half the CV one because all five models see the same images, so mean + std on the test set is not the paper's number and should not be compared with it.
 - One photo, `adc315bd` (dark-gray, 360×360), scores 53.9 with every model. Without it the mean would be 93.58. The other 66 are all above 80.
 - By type with TTA: dark-gray/small 93.51, dark-gray/large 93.67, H&E 90.76, bright-gray/large 90.31 (only 2 photos).
+
+### Second run, without `adc315bd`
+
+A figure of the photo (photo, hand-drawn answer, model, overlap) shows about 15 clear nuclei, of which the answer draws 5. The model finds all 15, so its 10 correct finds count as errors. The user asked to score again without it: run `20261117-538bcb3-s13-scse-test-no-adc`, config `13-scse-test-no-adc.yaml`, 66 photos, 6.0 minutes.
+
+| Per-image Dice with TTA | 67 photos | 66 photos | Target |
+|---|---|---|---|
+| Mean ± std | 92.99 ± 0.18 | 93.58 ± 0.18 | 92.81 |
+| Highest fold | 93.22 | 93.82 | |
+| Mean + std | 93.17 | 93.76 | 93.68 |
+
+Per fold with TTA: 93.61, 93.82, 93.26, 93.65, 93.57. IoU 87.98 ± 0.25, pixel accuracy 98.27 ± 0.05. Without TTA: 93.43 ± 0.17.
+
+Both numbers clear the target on paper, but this is not a win over the paper:
+- The photo was dropped after we saw its score. Other photos have wrong answers too (about 2% of nuclei, spec 10 label check) and stay in.
+- The std is between five models on the same photos, not between folds, so mean + std is not the paper's measure. The comparable result is still M's CV score, 92.86 mean and 93.23 mean + std.

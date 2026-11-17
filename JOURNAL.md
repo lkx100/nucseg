@@ -239,3 +239,7 @@ The user asked to score the scSE model on the test set, the first time it was op
 scored all 67 photos: TTA Dice 92.99 ± 0.18, highest 93.22, mean + std 93.17 (CV was 92.86 / 93.43 / 93.23).
 The model does as well on unseen photos as in CV. One photo, `adc315bd`, scores 54 with every model and costs
 0.6 points of the mean on its own. The test set now counts as seen.
+Rescored without `adc315bd` at the user's request (run 20261117-538bcb3-s13-scse-test-no-adc): its answer draws 5 of
+about 15 nuclei, and the model finds all 15. On the other 66 photos: 93.58 ± 0.18, highest 93.82, mean + std 93.76.
+That clears the target numbers, but the photo was dropped after seeing its score and the std is between models,
+not folds, so the CV result (92.86 / 93.23) stays the one to compare with the paper.
