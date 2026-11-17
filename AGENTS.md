@@ -25,7 +25,6 @@ Nuclei segmentation (DSB2018). Read `WORKFLOW.md` before implementing anything.
 - `notebooks/`: jupytext `# %%` `.py` files only
 - `runs/<run_id>/`: pulled outputs
 - `reports/`: overview figures for humans, redrawn by `uv run python reports/make_figures.py` after each run
-- `reports/explainer/`: animated page that explains the project in plain words (`index.html`). After new runs: `uv run python reports/explainer/build_assets.py`, edit `sections/`, then `python3 reports/explainer/build.py`
 
 `data/` and `runs/` are gitignored.
 
