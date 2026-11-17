@@ -62,3 +62,5 @@ Per fold with TTA: 93.61, 93.82, 93.26, 93.65, 93.57. IoU 87.98 ± 0.25, pixel a
 Both numbers clear the target on paper, but this is not a win over the paper:
 - The photo was dropped after we saw its score. Other photos have wrong answers too (about 2% of nuclei, spec 10 label check) and stay in.
 - The std is between five models on the same photos, not between folds, so mean + std is not the paper's measure. The comparable result is still M's CV score, 92.86 mean and 93.23 mean + std.
+
+The user's point, 2026-11-17: the paper trained on all 670 photos, while each of our fold models trained on 481 or 482 (67 locked, one bad answer out; spec 09 has the full comparison). M reaches these test scores with about 10% fewer training photos per fold than the paper's models had. Both runs are in the results sheet's "Test set" tab.
