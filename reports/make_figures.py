@@ -23,7 +23,7 @@ from nucseg.data import find_data_root, load_samples, load_splits  # noqa: E402
 OUT = ROOT / "reports"
 TARGET = 0.9368       # the paper's highest fold, the row the project is aimed at
 TARGET_MEAN = 0.9281  # the paper's mean of five folds
-RESCORES = ("s10-j-per-image",)  # scoring-only reruns of a model already in the charts
+RESCORES = ("s10-j-per-image", "s12-whole-photo", "s13-scse-test", "s13-scse-test-no-adc")  # scoring-only reruns of models already in the charts (s13 is the test set, not CV)
 PLAIN_CV = ("s09-plain-cv", "s11-gate", "s11-scse", "s11-swinv2", "s11-maxvit")  # plain 5-fold CV, no stop set, bad label out; not comparable with the runs before it
 LABELS = {  # slug -> short name for plots
     "s01-base": "01 A\nbaseline",
